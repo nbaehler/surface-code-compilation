@@ -1,0 +1,29 @@
+29.7.22
+-------
+
+Questions:
+- What is the return value of a joint Bell measurement? -> I should know, or ask in person, as I side question, get more info
+  For joint Pauli measurement we only get Zero or One back ... which are the two possible eigenvalues with the two associated sub vector spaces.
+  XX -> 00, 11 - -1 = 0, 01, 10 - +1 = 1
+  Here it is the parity
+- What is the input and the output format of the compiler? QIR?
+- How do I pick any of the parameters? Grid size/shape, matching ... (I remember 4*5, and then 8*10 such that a mapping is always possible)
+  -> start small = size of the number of qubits in the input circuit but as square as possible,
+  -> then extend if needed (assumes that there are as many vertical and horizontal constraints)
+  -> matching: at first random!, then exchange qubits etc. with functions: exchange(i, j)
+  -> how do I know how many ancilla qubits I should add?
+- When do we meet generally?
+- Opportunities at Microsoft?
+
+TODO:
+- Debug moves (and swap)
+- Fix the return type (Result, Result[]) of the Bell measurement
+
+Future:
+- Add passes to check for parallelism opportunities
+- Extend with more than just CNOT?
+
+
+-----------------------------------------
+Input: array of cnot gates (as indices), grid dimensions, use Pyqir evaluator to extract array
+Output: mapping (qubit to) and a scheduling array of array PyQir generator, add custom operators
