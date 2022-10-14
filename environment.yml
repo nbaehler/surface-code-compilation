@@ -113,7 +113,6 @@ dependencies:
   - pcre=8.45=h295c915_0
   - pexpect=4.8.0=pyhd3eb1b0_3
   - pickleshare=0.7.5=pyhd3eb1b0_1003
-  - pip=22.1.2=py310h06a4308_0
   - ply=3.11=py310h06a4308_0
   - prometheus_client=0.14.1=py310h06a4308_0
   - prompt-toolkit=3.0.20=pyhd3eb1b0_0
@@ -173,25 +172,37 @@ dependencies:
   - zlib=1.2.12=h5eee18b_3
   - zstd=1.5.2=ha4553b6_0
   - pip:
-      - aiofile==3.8.1
-      - aiohttp==3.8.3
-      - aiosignal==1.2.0
-      - async-timeout==4.0.2
-      - azure-identity==1.11.0
-      - azure-quantum==0.26.232864
-      - caio==0.9.8
-      - deprecated==1.2.13
-      - frozenlist==1.3.1
-      - msal==1.19.0
-      - msal-extensions==1.0.0
-      - multidict==6.0.2
-      - numpy==1.23.3
-      - portalocker==2.5.1
-      - protobuf==3.20.2
-      - pyqt5-sip==12.11.0
-      - qsharp==0.26.232864
-      - qsharp-chemistry==0.26.232864
-      - qsharp-core==0.26.232864
-      - wrapt==1.14.1
-      - yarl==1.8.1
+    - aiofile==3.8.1
+    - aiohttp==3.8.3
+    - aiosignal==1.2.0
+    - antlr4-python3-runtime==4.10
+    - async-timeout==4.0.2
+    - azure-identity==1.11.0
+    - azure-quantum==0.26.232864
+    - caio==0.9.8
+    - deprecated==1.2.13
+    - frozenlist==1.3.1
+    - iniconfig==1.1.1
+    - maturin==0.12.20
+    - msal==1.19.0
+    - msal-extensions==1.0.0
+    - multidict==6.0.2
+    - numpy==1.23.3
+    - pip==22.2.2
+    - pluggy==1.0.0
+    - portalocker==2.5.1
+    - protobuf==3.20.2
+    - py==1.11.0
+    - pyqir==0.6.2
+    - pyqir-evaluator==0.7.0a1
+    - pyqir-generator==0.7.0a1
+    - pyqir-parser==0.7.0a1
+    - pyqt5-sip==12.11.0
+    - pytest==7.1.3
+    - pytest-subtests==0.8.0
+    - qsharp==0.26.232864
+    - qsharp-chemistry==0.26.232864
+    - qsharp-core==0.26.232864
+    - wrapt==1.14.1
+    - yarl==1.8.1
 prefix: /home/nicolas/anaconda3/envs/surface-code-compilation

@@ -27,3 +27,7 @@ Future:
 -----------------------------------------
 Input: array of cnot gates (as indices), grid dimensions, use Pyqir evaluator to extract array
 Output: mapping (qubit to) and a scheduling array of array PyQir generator, add custom operators
+
+
+-----------------------------------------------------------------------
+conda env export > environment.yml
