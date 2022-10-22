@@ -1,9 +1,8 @@
 import os
 from pathlib import Path
 import tempfile
-import numpy as np
 
-from strategies import sequential
+from strategies import EDPC, Sequential, Sequential2
 from evaluator import logGates
 from generator import generate_qir
 
@@ -38,31 +37,30 @@ def main():
 
     # -------------------------------
 
-    path = Path(__file__).parent
-    file_path = os.path.join(path, "bitcode/bernstein_vazirani.bc")
+    # path = Path(__file__).parent
+    # file_path = os.path.join(path, "bitcode/bernstein_vazirani.bc")
 
-    cnots = logGates(file_path)
-
-    # -------------------------------
-
-    # cnots = [(0, 1), (15, 1)]
+    # cnots = logGates(file_path)
 
     # -------------------------------
 
-    grid_dims = (4, 5)
+    cnots = [(0, 1), (15, 1)]
 
-    if not valid(cnots, np.prod(grid_dims)):
-        raise ValueError("The input circuit is invalid.")
+    # -------------------------------
 
-    mapping, scheduling = sequential(grid_dims, cnots)
-    return generate_qir(mapping, scheduling)
+    grid_dims = (4, 6)
 
+    n_qubits, mapping, scheduling = EDPC(grid_dims, cnots).compile()
 
-def valid(cnots, n_qubits):
-    return not any(cnot[0] >= n_qubits or cnot[1] >= n_qubits for cnot in cnots)
+    print("\nInfos:")
+    print(f"Number of qubits used: {n_qubits}")
+    print(f"Mapping of qubits: {mapping}")
+    print(f"Scheduling: {scheduling}\n")
+
+    return generate_qir(n_qubits, mapping, scheduling)
 
 
 if __name__ == "__main__":
     res_qir = main()
 
-    print(res_qir)
+    print(f"The resulting QIR code:\n{res_qir}")

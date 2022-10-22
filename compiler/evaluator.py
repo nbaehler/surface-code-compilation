@@ -1,16 +1,12 @@
 from pyqir.evaluator import NonadaptiveEvaluator, GateSet
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict
 
 
 class Logger(GateSet):
-    number_of_qubits: int
-    number_of_registers: int
-    instructions: List[Tuple[int, int]]
-
     def __init__(self) -> None:
-        self.number_of_qubits = 0
-        self.number_of_registers = 0
-        self.instructions = []
+        self.number_of_qubits: int = 0
+        self.number_of_registers: int = 0
+        self.instructions: list[tuple[int, int]] = []
 
     def cx(self, control: str, target: str) -> None:
         self.instructions.append((int(control), int(target)))
@@ -88,7 +84,7 @@ class Logger(GateSet):
             print(instruction)
 
 
-def logGates(file):
+def logGates(file: str):
     evaluator = NonadaptiveEvaluator()
     logger = Logger()
 
