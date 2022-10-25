@@ -48,7 +48,7 @@ def main():
 
     # -------------------------------
 
-    grid_dims = (4, 6)
+    grid_dims = (6, 6)
 
     n_qubits, mapping, scheduling = EDPC(grid_dims, cnots).compile()
 
