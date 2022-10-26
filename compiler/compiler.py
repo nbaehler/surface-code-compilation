@@ -8,7 +8,7 @@ from generator import generate_qir
 
 import qsharp
 
-from Circuits import testCircuit
+# from Circuits import testCircuit
 
 
 def main():
