@@ -31,3 +31,14 @@ Output: mapping (qubit to) and a scheduling array of array PyQir generator, add 
 
 -----------------------------------------------------------------------
 conda env export > environment.yml
+-----------------------------------------------------------------------
+26.10.22
+--------
+- data structures
+- typedefs
+- abstract -> algo
+- QIR alliance
+- Deadline, midterm presentation
+- Microsoft intern
+
+

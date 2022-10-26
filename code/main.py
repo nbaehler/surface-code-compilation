@@ -2,9 +2,12 @@ import os
 from pathlib import Path
 import tempfile
 
-from strategies import EDPC, Sequential, Sequential2
-from evaluator import logGates
-from generator import generate_qir
+from qir_in import log_gates
+from mapper import Identity, SimpleRenaming, Grid
+from scheduler import Sequential, EDPC
+from compiler import compile
+from qir_out import generate_qir
+
 
 import qsharp
 
@@ -19,7 +22,7 @@ def main():
     # ) as f:  # https://github.com/qir-alliance/pyqir/blob/a99afdb8126b1ff0a331bdc81aed9930f7bd23b9/examples/evaluator/teleport.py#L36-L40
     #     f.write(in_qir.encode("utf-8"))
     #     f.flush()
-    #     cnots = logGates(f.name)
+    #     cnots = log_gates(f.name)
 
     # -------------------------------
 
@@ -50,17 +53,27 @@ def main():
 
     grid_dims = (6, 6)
 
-    n_qubits, mapping, scheduling = EDPC(grid_dims, cnots).compile()
+    n_qubits, mapping = Grid(
+        grid_dims, cnots
+    ).map()  # TODO do I need those abstract classes?
+    scheduling = EDPC(grid_dims, cnots, mapping).schedule()
+
+    ir = compile(mapping, scheduling)  # TODO input to generator
 
     print("\nInfos:")
     print(f"Number of qubits used: {n_qubits}")
     print(f"Mapping of qubits: {mapping}")
     print(f"Scheduling: {scheduling}\n")
 
-    return generate_qir(n_qubits, mapping, scheduling)
+    res_qir = generate_qir(n_qubits, mapping, scheduling)
+
+    print(f"The resulting QIR code:\n{res_qir}")
 
 
 if __name__ == "__main__":
-    res_qir = main()
+    main()
 
-    print(f"The resulting QIR code:\n{res_qir}")
+# TODO
+# Mapper, mapping strategy
+# Scheduler, scheduling strategy
+# Compiler, compiling strategy

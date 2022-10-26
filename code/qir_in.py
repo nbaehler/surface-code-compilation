@@ -84,7 +84,7 @@ class Logger(GateSet):
             print(instruction)
 
 
-def logGates(file: str):
+def log_gates(file: str):
     evaluator = NonadaptiveEvaluator()
     logger = Logger()
 
