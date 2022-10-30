@@ -102,4 +102,4 @@ class Grid(Mapper):
 
         n_qubits = int(np.prod(self._grid_dims))
 
-        return n_qubits, mapping
+        return n_qubits, mapping, self._grid_dims

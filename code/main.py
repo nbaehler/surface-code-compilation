@@ -53,9 +53,14 @@ def main():
 
     grid_dims = (6, 6)
 
-    n_qubits, mapping = Grid(
+    (
+        n_qubits,
+        mapping,
+        grid_dims,
+    ) = Grid(  # TODO grid is the only one the change grid dims?
         grid_dims, cnots
     ).map()  # TODO do I need those abstract classes?
+
     scheduling = EDPC(grid_dims, cnots, mapping).schedule()
 
     ir = compile(mapping, scheduling)  # TODO input to generator

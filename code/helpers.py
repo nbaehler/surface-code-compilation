@@ -1,8 +1,8 @@
-def flatten(r, c, grid_dims):
+def flatten(r: int, c: int, grid_dims: tuple[int, int]) -> int:
     return r * grid_dims[1] + c
 
 
-def unflatten(i, grid_dims):
+def unflatten(i: int, grid_dims: tuple[int, int]) -> tuple[int, int]:
     return i // grid_dims[1], i % grid_dims[1]
 
 

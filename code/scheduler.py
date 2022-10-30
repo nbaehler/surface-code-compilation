@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from helpers import is_data_qubit
-from operator_graph import OperatorGraph
+from operator_graph import OperatorGraph, Path
 
 
 class Scheduler(ABC):
@@ -27,7 +27,7 @@ class Scheduler(ABC):
 
 class Sequential(Scheduler):
     def schedule(self):
-        return [[cnot] for cnot in self._cnots]
+        return [[cnot] for cnot in self._cnots]  # TODO Use mapping?
 
 
 # Paper ------------------------------------------------------------------------
@@ -51,7 +51,7 @@ class EDPC(Scheduler):
             while self._cnots:
                 terminals, p = self.__greedy_edp()
                 self._cnots = [cnot for cnot in self._cnots if cnot not in terminals]
-                q2 += p
+                q2.extend(p)
 
             scheduling.append(q1 if len(q1) < len(q2) else q2)
 
@@ -59,14 +59,13 @@ class EDPC(Scheduler):
 
     def __edp_subroutine(
         self,
-        operator_edp_set: list[list[tuple[int, int]]],
+        operator_edp_set: list[Path],
         crossing_vertices: list[list[tuple[int, int]]],
     ) -> tuple[
         list[list[tuple[int, int]]],
         list[list[tuple[int, int]]],
         list[list[tuple[int, int]]],
     ]:
-
         # Split into two VDP sets
         p1, p2 = self.__fragment_operator_edp_set(operator_edp_set, crossing_vertices)
 
@@ -96,16 +95,19 @@ class EDPC(Scheduler):
 
     def __fragment_operator_edp_set(
         self,
-        operator_edp_set: list[list[tuple[int, int]]],
+        operator_edp_set: list[Path],
         crossing_vertices: list[list[tuple[int, int]]],
-    ) -> tuple[list[list[tuple[int, int]]], list[list[tuple[int, int]]]]:
-        if not crossing_vertices:
+    ) -> tuple[list[Path], list[list[tuple[int, int]]]]:
+        if crossing_vertices == [[]]:
             return operator_edp_set, []
 
-        for i, crossing_vertex in enumerate(crossing_vertices):
-            p1 = operator_edp_set[: i + 1]
-            p2 = operator_edp_set[i + 1 :]
-        return [], []
+        raise Warning("Not implemented yet")
+
+        # for i, crossing_vertex in enumerate(crossing_vertices):
+        #     p1 = operator_edp_set[: i + 1]
+        #     p2 = operator_edp_set[i + 1 :]
+        # return [], []
 
     def __greedy_edp(self) -> tuple[list[tuple[int, int]], list[list[tuple[int, int]]]]:
-        return [], []
+        raise Warning("Not implemented yet")
+        # return [], []
