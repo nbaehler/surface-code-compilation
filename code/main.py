@@ -1,15 +1,14 @@
 import os
-from pathlib import Path
 import tempfile
-
-from qir_in import log_gates
-from mapper import Identity, SimpleRenaming, Grid
-from scheduler import Sequential, EDPC
-from compiler import compile
-from qir_out import generate_qir
-
+from pathlib import Path
 
 import qsharp
+
+from compiler import compile
+from mapper import Grid, Identity, SimpleRenaming
+from qir_in import log_gates
+from qir_out import generate_qir
+from scheduler import EDPC, Sequential
 
 # from Circuits import testCircuit
 

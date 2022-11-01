@@ -1,5 +1,6 @@
-from pyqir.evaluator import NonadaptiveEvaluator, GateSet
 from typing import Any, Dict
+
+from pyqir.evaluator import GateSet, NonadaptiveEvaluator
 
 
 class Logger(GateSet):

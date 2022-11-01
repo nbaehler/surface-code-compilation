@@ -1,114 +1,132 @@
 import numpy as np
 
-from helpers import unflatten, is_data_qubit
-
-
-class Path:
-    def __init__(self, ctrl: tuple[int, int], tgt: tuple[int, int]) -> None:
-        assert is_data_qubit(ctrl)
-        assert is_data_qubit(tgt)
-
-        ctrl_r, ctrl_c = ctrl
-        tgt_r, tgt_c = tgt
-
-        self._path = [
-            (ctrl_r, ctrl_c),
-            (ctrl_r - 1, ctrl_c),
-            (ctrl_r - 1, tgt_c - 1),
-            (tgt_r, tgt_c - 1),
-            (tgt_r, tgt_c),
-        ]
-
-        # TODO might add complications but leads to shorter paths
-        # current_r = ctrl_r
-        # current_c = ctrl_c
-        # path = [(current_r, current_c)]
-
-        # if current_r > tgt_r:  # Start -> vertical
-        #     current_r -= 1
-        # else:
-        #     current_r += 1
-        # path.append((current_r, current_c))
-
-        # if current_c > tgt_c:
-        #     current_c -= current_c - (tgt_c + 1)
-        # else:
-        #     current_c += (tgt_c - 1) - current_c
-        # path.append((current_r, current_c))
-
-        # current_r -= current_r - tgt_r if current_r > tgt_r else tgt_r - current_r
-        # path.append((current_r, current_c))
-
-        # if current_c > tgt_c:  # End -> horizontal
-        #     current_c -= 1
-        # else:
-        #     current_c += 1
-        # path.append((current_r, current_c))
-
-        # assert current_r == tgt_r and current_c == tgt_c
-
-    def __getitem__(self, i: int) -> tuple[int, int]:
-        return self._path[i]
-
-    def __len__(self) -> int:
-        return len(self._path)
-
-    def contains(self, qubit: tuple[int, int]) -> bool:
-        if qubit in [
-            self._path[0],
-            self._path[1],
-            self._path[3],
-            self._path[4],
-        ]:  # First and last are impossible in practice
-            return True
-
-        if qubit[0] == self._path[1][0]:
-            f = min(self._path[1][1], self._path[2][1])
-            t = max(self._path[1][1], self._path[2][1])
-
-            return qubit in [(qubit[0], j) for j in range(f, t + 1)]
-
-        elif qubit[1] == self._path[2][1]:
-            f = min(self._path[2][0], self._path[3][0])
-            t = max(self._path[2][0], self._path[3][0])
-
-            return qubit in [(j, qubit[1]) for j in range(f, t + 1)]
-
-        return False
+from helpers import unflatten
+from path import KeyPath, NormalPath
+from vertex import Ancilla, Start, Stop, Vertex
 
 
 class OperatorGraph:
     def __init__(
         self,
         grid_dims: tuple[int, int],
+        mapping: dict[int, int],
+        cnots: list[tuple[int, int]],
     ) -> None:
-        self._grid_dims = grid_dims
-        self.__reset()
-
-    def build_operator_edp_sets(
-        self, mapping: dict[int, int], cnots: list[tuple[int, int]]
-    ) -> tuple[list[list[Path]], list[list[list[tuple[int, int]]]]]:
-        list_operator_edp_sets = []
-        operator_edp_set = []
-        list_crossing_vertices = []
-        crossing_vertices = []
+        self._grid_dims: tuple[int, int] = grid_dims
+        self._cnots: list[tuple[tuple[int, int], tuple[int, int]]] = []
 
         for cnot in cnots:
             ctrl = unflatten(mapping[cnot[0]], self._grid_dims)
             tgt = unflatten(mapping[cnot[1]], self._grid_dims)
 
-            if self.__is_used(ctrl) or self.__is_used(
+            self._cnots.append((ctrl, tgt))
+
+    def _build_operator_graph(self) -> None:
+        self._operator_graph = np.empty(self._grid_dims, dtype=Vertex)
+
+        for i in range(self._grid_dims[0]):
+            for j in range(self._grid_dims[1]):
+                if i % 2 == 0 or j % 2 == 0:
+                    self._operator_graph[i, j] = Ancilla((i, j), self._grid_dims)
+                else:
+                    self._operator_graph[i, j] = Vertex()
+
+    def _add_terminal_pair(
+        self, terminal: tuple[tuple[int, int], tuple[int, int]]
+    ) -> None:
+        (ctrl, tgt) = terminal
+        self._operator_graph[ctrl] = Start(ctrl)
+        self._operator_graph[(ctrl[0] - 1, ctrl[1])].add_neighbor(ctrl)
+        self._operator_graph[(ctrl[0] + 1, ctrl[1])].add_neighbor(ctrl)
+
+        self._operator_graph[tgt] = Stop(tgt)
+        self._operator_graph[(tgt[0], tgt[1] - 1)].add_neighbor(tgt)
+        self._operator_graph[(tgt[0], tgt[1] + 1)].add_neighbor(tgt)
+
+    def _remove_terminal_pair(
+        self, terminal: tuple[tuple[int, int], tuple[int, int]]
+    ) -> None:
+        (ctrl, tgt) = terminal
+        self._operator_graph[ctrl] = Vertex()
+        self._operator_graph[(ctrl[0] - 1, ctrl[1])].remove_neighbor(ctrl)
+        self._operator_graph[(ctrl[0] + 1, ctrl[1])].remove_neighbor(ctrl)
+
+        self._operator_graph[tgt] = Vertex()
+        self._operator_graph[(tgt[0], tgt[1] - 1)].remove_neighbor(tgt)
+        self._operator_graph[(tgt[0], tgt[1] + 1)].remove_neighbor(tgt)
+
+    def _remove_ancillas_in_path(self, path: NormalPath) -> None:
+        for i in range(1, len(path) - 2):
+            vertex_position = path[i]
+            next_vertex_position = path[i + 1]
+
+            self._operator_graph[vertex_position].remove_neighbor(next_vertex_position)
+            self._operator_graph[next_vertex_position].remove_neighbor(vertex_position)
+
+    def _shortest_path(  # BFS algorithm
+        self, start: tuple[int, int], stop: tuple[int, int]
+    ) -> NormalPath:
+        distances = np.full(self._grid_dims, -1, dtype=int)
+        queue = [start]
+        distances[start] = 0
+
+        while queue:
+            current = queue.pop(0)
+
+            for i in self._operator_graph[current]:
+                if distances[i] == -1:
+                    queue.append(i)
+                    distances[i] = distances[current] + 1
+                else:
+                    distances[i] = min(distances[i], distances[current] + 1)
+
+                if i == stop:
+                    return self.__compute_path_from_distances(start, stop, distances)
+
+        return None
+
+    def __compute_path_from_distances(
+        self, start: tuple[int, int], stop: tuple[int, int], distances: np.ndarray
+    ) -> NormalPath:
+        path = NormalPath()
+        current = stop
+
+        while current != start:
+            path.add_vertex(current)
+
+            for i in self._operator_graph[current]:
+                if distances[i] == distances[current] - 1:
+
+                    assert current != i
+                    current = i
+                    break
+
+        path.add_vertex(start)
+        path.reverse()
+        return path
+
+    def _build_operator_edp_sets(
+        self,
+    ) -> tuple[list[list[KeyPath]], list[list[list[tuple[int, int]]]]]:
+        list_operator_edp_sets = []
+        operator_edp_set = []
+        list_crossing_vertices = []
+        crossing_vertices = []
+        self.__reset_vertex_used()
+
+        for (ctrl, tgt) in self._cnots:
+            if self.__vertex_is_used(ctrl) or self.__vertex_is_used(
                 tgt
             ):  # End of paths can't overlap
                 list_operator_edp_sets.append(operator_edp_set)
                 operator_edp_set = []
                 list_crossing_vertices.append(crossing_vertices)
                 crossing_vertices = []
-                self.__reset()
+                self.__reset_vertex_used()
 
-            path = Path(ctrl, tgt)
+            path = KeyPath(ctrl, tgt)
             operator_edp_set.append(path)
-            crossing_vertices.append(self.__get_crossing_vertices_and_set_used(path))
+            crossing_vertices.append(self.__update_used_and_get_crossing_vertices(path))
 
         if operator_edp_set != [[]]:
             list_operator_edp_sets.append(operator_edp_set)
@@ -116,14 +134,16 @@ class OperatorGraph:
 
         return list_operator_edp_sets, list_crossing_vertices
 
-    def __is_used(self, i: tuple[int, int]) -> bool:
-        return self._grid[i[0], i[1]]
+    def __vertex_is_used(self, i: tuple[int, int]) -> bool:
+        return self._used_vertices[i[0], i[1]]
 
-    def __reset(self) -> None:
-        self._grid = np.zeros(self._grid_dims, dtype=bool)
+    def __reset_vertex_used(self) -> None:
+        self._used_vertices = np.zeros(self._grid_dims, dtype=bool)
 
-    def __get_crossing_vertices_and_set_used(self, path: Path) -> list[tuple[int, int]]:
-        self._grid[path[0]] = True
+    def __update_used_and_get_crossing_vertices(
+        self, path: KeyPath
+    ) -> list[tuple[int, int]]:
+        self._used_vertices[path[0]] = True
 
         crossing_vertices = []
         for i in range(len(path) - 1):
@@ -141,10 +161,10 @@ class OperatorGraph:
                     t = start[0]
 
                 for r in range(f, t):
-                    if self.__is_used((r, start[1])):
+                    if self.__vertex_is_used((r, start[1])):
                         temp.extend((r, start[1]))
                     else:
-                        self._grid[r, start[1]] = True
+                        self._used_vertices[r, start[1]] = True
 
             else:
                 if start[1] < stop[1]:
@@ -155,10 +175,10 @@ class OperatorGraph:
                     t = start[1]
 
                 for c in range(f, t):
-                    if self.__is_used((start[0], c)):
+                    if self.__vertex_is_used((start[0], c)):
                         temp.extend((start[0], c))
                     else:
-                        self._grid[start[0], c] = True
+                        self._used_vertices[start[0], c] = True
 
             crossing_vertices.extend(temp)
 

@@ -1,6 +1,7 @@
 import itertools
-import numpy as np
 from abc import ABC, abstractmethod
+
+import numpy as np
 
 from helpers import flatten, is_data_qubit
 

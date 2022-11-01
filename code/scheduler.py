@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod
 
+import numpy as np
+
 from helpers import is_data_qubit
-from operator_graph import OperatorGraph, Path
+from operator_graph import OperatorGraph
+from path import KeyPath, NormalPath
 
 
 class Scheduler(ABC):
@@ -35,31 +38,35 @@ class Sequential(Scheduler):
 
 class EDPC(Scheduler):
     def schedule(self):
-        graph = OperatorGraph(self._grid_dims)
+        operator_graph = OperatorGraph(self._grid_dims, self._mapping, self._cnots)
 
-        list_operator_edp_sets, list_crossing_vertices = graph.build_operator_edp_sets(
-            self._mapping, self._cnots
-        )
+        (
+            list_operator_edp_sets,
+            list_crossing_vertices,
+        ) = operator_graph._build_operator_edp_sets()
 
-        scheduling = []
-        for i in range(len(list_operator_edp_sets)):
-            q1 = self.__edp_subroutine(
-                list_operator_edp_sets[i], list_crossing_vertices[i]
-            )
+        q1 = [
+            self.__edp_subroutine(list_operator_edp_sets[i], list_crossing_vertices[i])
+            for i in range(len(list_operator_edp_sets))
+        ]
 
-            q2 = []
-            while self._cnots:
-                terminals, p = self.__greedy_edp()
-                self._cnots = [cnot for cnot in self._cnots if cnot not in terminals]
-                q2.extend(p)
+        operator_graph._build_operator_graph()
+        terminals = operator_graph._cnots.copy()  # TODO copy?
+        q2 = []
 
-            scheduling.append(q1 if len(q1) < len(q2) else q2)
+        while terminals:
+            covered_terminals, p_star = self.__greedy_edp(operator_graph, terminals)
 
-        return scheduling
+            assert covered_terminals != []
+
+            terminals = [pair for pair in terminals if pair not in covered_terminals]
+            q2.extend(p_star)
+
+        return q1 if len(q1) < len(q2) else q2
 
     def __edp_subroutine(
         self,
-        operator_edp_set: list[Path],
+        operator_edp_set: list[KeyPath],
         crossing_vertices: list[list[tuple[int, int]]],
     ) -> tuple[
         list[list[tuple[int, int]]],
@@ -95,19 +102,57 @@ class EDPC(Scheduler):
 
     def __fragment_operator_edp_set(
         self,
-        operator_edp_set: list[Path],
+        operator_edp_set: list[KeyPath],
         crossing_vertices: list[list[tuple[int, int]]],
-    ) -> tuple[list[Path], list[list[tuple[int, int]]]]:
+    ) -> tuple[list[KeyPath], list[list[tuple[int, int]]]]:
         if crossing_vertices == [[]]:
             return operator_edp_set, []
 
         raise Warning("Not implemented yet")
 
-        # for i, crossing_vertex in enumerate(crossing_vertices):
-        #     p1 = operator_edp_set[: i + 1]
-        #     p2 = operator_edp_set[i + 1 :]
-        # return [], []
+    def __greedy_edp(
+        self,
+        operator_graph: OperatorGraph,
+        terminals: list[tuple[tuple[int, int], tuple[int, int]]],
+    ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[NormalPath]]:
+        A = []
+        covered_terminals = []
 
-    def __greedy_edp(self) -> tuple[list[tuple[int, int]], list[list[tuple[int, int]]]]:
-        raise Warning("Not implemented yet")
-        # return [], []
+        while terminals != []:
+            (
+                shortest_path_terminal,
+                P_star,
+            ) = self.__compute_minimal_length_shortest_path_between_terminals(
+                operator_graph, terminals
+            )
+
+            if P_star is None:
+                return covered_terminals, A
+
+            A.append(P_star)
+            operator_graph._remove_ancillas_in_path(P_star)
+            covered_terminals.append(shortest_path_terminal)
+            terminals.remove(shortest_path_terminal)
+
+        return covered_terminals, A
+
+    def __compute_minimal_length_shortest_path_between_terminals(
+        self,
+        operator_graph: OperatorGraph,
+        terminals: list[tuple[tuple[int, int], tuple[int, int]]],
+    ) -> tuple[tuple[tuple[int, int], tuple[int, int]], NormalPath]:
+        shortest_path_terminal = None
+        path = None
+        length = np.inf
+
+        for terminal in terminals:
+            operator_graph._add_terminal_pair(terminal)
+            shortest_path = operator_graph._shortest_path(terminal[0], terminal[1])
+            operator_graph._remove_terminal_pair(terminal)
+
+            if shortest_path is not None and len(shortest_path) < length:
+                length = len(shortest_path)
+                path = shortest_path
+                shortest_path_terminal = terminal
+
+        return shortest_path_terminal, path
