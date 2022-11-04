@@ -63,7 +63,7 @@ class OperatorGraph:
             self._operator_graph[vertex_position].remove_neighbor(next_vertex_position)
             self._operator_graph[next_vertex_position].remove_neighbor(vertex_position)
 
-    def _shortest_path(  # BFS algorithm
+    def _shortest_path(  # TODO BFS algorithm, paper uses Dijkstra's algorithm
         self, start: tuple[int, int], stop: tuple[int, int]
     ) -> NormalPath:
         distances = np.full(self._grid_dims, -1, dtype=int)
@@ -107,11 +107,11 @@ class OperatorGraph:
 
     def _build_operator_edp_sets(
         self,
-    ) -> tuple[list[list[KeyPath]], list[list[list[tuple[int, int]]]]]:
+    ) -> tuple[list[list[KeyPath]], list[set[tuple[int, int]]]]:
         list_operator_edp_sets = []
         operator_edp_set = []
         list_crossing_vertices = []
-        crossing_vertices = []
+        crossing_vertices = set()
         self.__reset_vertex_used()
 
         for (ctrl, tgt) in self._cnots:
@@ -121,12 +121,12 @@ class OperatorGraph:
                 list_operator_edp_sets.append(operator_edp_set)
                 operator_edp_set = []
                 list_crossing_vertices.append(crossing_vertices)
-                crossing_vertices = []
+                crossing_vertices = set()
                 self.__reset_vertex_used()
 
             path = KeyPath(ctrl, tgt)
             operator_edp_set.append(path)
-            crossing_vertices.append(self.__update_used_and_get_crossing_vertices(path))
+            crossing_vertices.update(self.__update_used_and_get_crossing_vertices(path))
 
         if operator_edp_set != [[]]:
             list_operator_edp_sets.append(operator_edp_set)

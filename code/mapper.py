@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from helpers import flatten, is_data_qubit
+from helpers import flatten, unflatten, is_data_qubit
 
 
 class Mapper(ABC):
@@ -23,7 +23,9 @@ class Mapper(ABC):
 # Dummy ------------------------------------------------------------------------
 
 
-class Identity(Mapper):
+class Identity(
+    Mapper
+):  # TODO adapt to use no ancillas but still lead to correct mapping
     def map(self):
         n_qubits = int(np.prod(self._grid_dims))
 
@@ -40,7 +42,9 @@ class Identity(Mapper):
         return not any(cnot[0] >= n_qubits or cnot[1] >= n_qubits for cnot in cnots)
 
 
-class SimpleRenaming(Mapper):
+class Renaming(
+    Mapper
+):  # TODO adapt to use no ancillas but still lead to correct mapping
     def map(self):
         n_max = np.prod(self._grid_dims)
         mapping = {}
@@ -65,8 +69,41 @@ class SimpleRenaming(Mapper):
 # Paper ------------------------------------------------------------------------
 
 
-class Grid(Mapper):
-    def map(self):
+class PaperIdentity(Mapper):
+    def map(
+        self,
+    ):  # TODO for now 5x5 with ancillas all around, but we only need ancillas on the top and left side if we chose always the same paths
+        if self._grid_dims[0] % 2 == 0:
+            self._grid_dims = (self._grid_dims[0] - 1, self._grid_dims[1])
+
+        if self._grid_dims[1] % 2 == 0:
+            self._grid_dims = (self._grid_dims[0], self._grid_dims[1] - 1)
+
+        n_qubits = int(np.prod(self._grid_dims))
+
+        if not self.__mappable(self._cnots, n_qubits):
+            raise ValueError(
+                f"The input circuit is not mappable to the given grid dimension {self._grid_dims}."
+            )
+
+        mapping = {i: i for i in range(n_qubits)}
+
+        return n_qubits, mapping, self._grid_dims
+
+    def __mappable(self, cnots: list[tuple[int, int]], n_qubits: int):
+        return not any(
+            cnot[0] >= n_qubits
+            or not is_data_qubit(unflatten(cnot[0], self._grid_dims))
+            or cnot[1] >= n_qubits
+            or not is_data_qubit(unflatten(cnot[1], self._grid_dims))
+            for cnot in cnots
+        )
+
+
+class PaperRenaming(Mapper):
+    def map(
+        self,
+    ):  # TODO for now 5x5 with ancillas all around, but we only need ancillas on the top and left side if we chose always the same paths
         if self._grid_dims[0] % 2 == 0:
             self._grid_dims = (self._grid_dims[0] - 1, self._grid_dims[1])
 

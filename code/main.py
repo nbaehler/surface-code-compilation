@@ -5,7 +5,7 @@ from pathlib import Path
 import qsharp
 
 from compiler import compile
-from mapper import Grid, Identity, SimpleRenaming
+from mapper import PaperRenaming, Identity, Renaming
 from qir_in import log_gates
 from qir_out import generate_qir
 from scheduler import EDPC, Sequential
@@ -16,7 +16,7 @@ from scheduler import EDPC, Sequential
 def main():
     # in_qir = testCircuit.as_qir()
 
-    # with tempfile.NamedTemporaryFile(  # TODO Problem: https://github.com/qir-alliance/pyqir/tree/main/pyqir-evaluator#pyqir-evaluator
+    # with tempfile.NamedTemporaryFile(
     #     suffix=".ll"
     # ) as f:  # https://github.com/qir-alliance/pyqir/blob/a99afdb8126b1ff0a331bdc81aed9930f7bd23b9/examples/evaluator/teleport.py#L36-L40
     #     f.write(in_qir.encode("utf-8"))
@@ -56,7 +56,7 @@ def main():
         n_qubits,
         mapping,
         grid_dims,
-    ) = Grid(  # TODO grid is the only one the change grid dims?
+    ) = PaperRenaming(  # TODO grid is the only one the change grid dims?
         grid_dims, cnots
     ).map()  # TODO do I need those abstract classes?
 
@@ -76,8 +76,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# TODO
-# Mapper, mapping strategy
-# Scheduler, scheduling strategy
-# Compiler, compiling strategy

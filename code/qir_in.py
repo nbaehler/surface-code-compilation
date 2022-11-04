@@ -86,7 +86,9 @@ class Logger(GateSet):
 
 
 def log_gates(file: str):
-    evaluator = NonadaptiveEvaluator()
+    evaluator = (
+        NonadaptiveEvaluator()
+    )  # TODO not complete syntax https://github.com/qir-alliance/pyqir/tree/main/pyqir-evaluator#pyqir-evaluator
     logger = Logger()
 
     evaluator.eval(file, logger)
