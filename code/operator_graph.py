@@ -1,7 +1,7 @@
 import numpy as np
 
 from helpers import unflatten
-from path import KeyPath, NormalPath
+from path import PaperKeyPath, CompletePath
 from vertex import Ancilla, Start, Stop, Vertex
 
 
@@ -21,7 +21,7 @@ class OperatorGraph:
 
             self._cnots.append((ctrl, tgt))
 
-    def _build_operator_graph(self) -> None:
+    def _build_initial_operator_graph(self) -> None:
         self._operator_graph = np.empty(self._grid_dims, dtype=Vertex)
 
         for i in range(self._grid_dims[0]):
@@ -55,7 +55,7 @@ class OperatorGraph:
         self._operator_graph[(tgt[0], tgt[1] - 1)].remove_neighbor(tgt)
         self._operator_graph[(tgt[0], tgt[1] + 1)].remove_neighbor(tgt)
 
-    def _remove_ancillas_in_path(self, path: NormalPath) -> None:
+    def _remove_ancillas_in_path(self, path: CompletePath) -> None:
         for i in range(1, len(path) - 2):
             vertex_position = path[i]
             next_vertex_position = path[i + 1]
@@ -65,7 +65,7 @@ class OperatorGraph:
 
     def _shortest_path(  # TODO BFS algorithm, paper uses Dijkstra's algorithm
         self, start: tuple[int, int], stop: tuple[int, int]
-    ) -> NormalPath:
+    ) -> CompletePath:
         distances = np.full(self._grid_dims, -1, dtype=int)
         queue = [start]
         distances[start] = 0
@@ -87,8 +87,8 @@ class OperatorGraph:
 
     def __compute_path_from_distances(
         self, start: tuple[int, int], stop: tuple[int, int], distances: np.ndarray
-    ) -> NormalPath:
-        path = NormalPath()
+    ) -> CompletePath:
+        path = CompletePath()
         current = stop
 
         while current != start:
@@ -107,79 +107,23 @@ class OperatorGraph:
 
     def _build_operator_edp_sets(
         self,
-    ) -> tuple[list[list[KeyPath]], list[set[tuple[int, int]]]]:
-        list_operator_edp_sets = []
-        operator_edp_set = []
-        list_crossing_vertices = []
-        crossing_vertices = set()
-        self.__reset_vertex_used()
+    ) -> list[list[PaperKeyPath]]:
+        paths = [PaperKeyPath(ctrl, tgt) for ctrl, tgt in self._cnots]
 
-        for (ctrl, tgt) in self._cnots:
-            if self.__vertex_is_used(ctrl) or self.__vertex_is_used(
-                tgt
-            ):  # End of paths can't overlap
-                list_operator_edp_sets.append(operator_edp_set)
-                operator_edp_set = []
-                list_crossing_vertices.append(crossing_vertices)
-                crossing_vertices = set()
-                self.__reset_vertex_used()
+        operator_edp_sets = [[]]
+        for new_path in paths:  # TODO use graph coloring instead, this is inefficient
+            added = False
+            for operator_edp_set in operator_edp_sets:
+                share_edges = any(
+                    new_path.is_edge_disjoint(set_path) for set_path in operator_edp_set
+                )
 
-            path = KeyPath(ctrl, tgt)
-            operator_edp_set.append(path)
-            crossing_vertices.update(self.__update_used_and_get_crossing_vertices(path))
+                if not share_edges:
+                    operator_edp_set.append(new_path)
+                    added = True
+                    break
 
-        if operator_edp_set != [[]]:
-            list_operator_edp_sets.append(operator_edp_set)
-            list_crossing_vertices.append(crossing_vertices)
+            if not added:
+                operator_edp_sets.append([new_path])
 
-        return list_operator_edp_sets, list_crossing_vertices
-
-    def __vertex_is_used(self, i: tuple[int, int]) -> bool:
-        return self._used_vertices[i[0], i[1]]
-
-    def __reset_vertex_used(self) -> None:
-        self._used_vertices = np.zeros(self._grid_dims, dtype=bool)
-
-    def __update_used_and_get_crossing_vertices(
-        self, path: KeyPath
-    ) -> list[tuple[int, int]]:
-        self._used_vertices[path[0]] = True
-
-        crossing_vertices = []
-        for i in range(len(path) - 1):
-            start = path[i]
-            stop = path[i + 1]
-
-            temp = []
-
-            if start[0] != stop[0]:
-                if start[0] < stop[0]:
-                    f = start[0] + 1
-                    t = stop[0] + 1
-                else:
-                    f = stop[0]
-                    t = start[0]
-
-                for r in range(f, t):
-                    if self.__vertex_is_used((r, start[1])):
-                        temp.extend((r, start[1]))
-                    else:
-                        self._used_vertices[r, start[1]] = True
-
-            else:
-                if start[1] < stop[1]:
-                    f = start[1] + 1
-                    t = stop[1] + 1
-                else:
-                    f = stop[1]
-                    t = start[1]
-
-                for c in range(f, t):
-                    if self.__vertex_is_used((start[0], c)):
-                        temp.extend((start[0], c))
-                    else:
-                        self._used_vertices[start[0], c] = True
-
-            crossing_vertices.extend(temp)
-
-        return crossing_vertices
+        return operator_edp_sets

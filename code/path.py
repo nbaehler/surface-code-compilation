@@ -1,3 +1,4 @@
+import itertools
 from abc import ABC
 
 from helpers import is_data_qubit
@@ -20,7 +21,7 @@ class Path(ABC):
         return len(self._vertices)
 
 
-class NormalPath(Path):
+class CompletePath(Path):
     def __init__(self, vertices: list[tuple[int, int]] = None) -> None:
         super().__init__()
 
@@ -32,8 +33,34 @@ class NormalPath(Path):
     def reverse(self) -> None:
         self._vertices.reverse()
 
+    def get_vertices(self) -> list[tuple[int, int]]:
+        return self._vertices
+
 
 class KeyPath(Path):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def to_complete_path(self) -> CompletePath:
+        path = CompletePath()
+
+        path.add_vertex(self._vertices[0])
+
+        step = 1 if self._vertices[1][1] < self._vertices[2][1] else -1
+        for i in range(self._vertices[1][1], self._vertices[2][1], step):
+            path.add_vertex((self._vertices[1][0], i))
+
+        step = 1 if self._vertices[2][0] < self._vertices[3][0] else -1
+        for i in range(self._vertices[2][0], self._vertices[3][0], step):
+            path.add_vertex((i, self._vertices[2][1]))
+
+        path.add_vertex(self._vertices[3])
+        path.add_vertex(self._vertices[4])
+
+        return path
+
+
+class PaperKeyPath(KeyPath):
     def __init__(self, start: tuple[int, int], stop: tuple[int, int]) -> None:
         super().__init__()
 
@@ -51,71 +78,52 @@ class KeyPath(Path):
             (stop_r, stop_c),
         ]
 
-        # TODO might add complications but leads to shorter paths
-        # current_r = ctrl_r
-        # current_c = ctrl_c
-        # path = [(current_r, current_c)]
+    def is_vertex_disjoint(self, other: KeyPath) -> bool:
+        first = set(self.to_complete_path().get_vertices())  # TODO inefficient?
+        second = set(other.to_complete_path().get_vertices())
 
-        # if current_r > tgt_r:  # Start -> vertical
-        #     current_r -= 1
-        # else:
-        #     current_r += 1
-        # path.append((current_r, current_c))
+        return not first.intersection(second)
 
-        # if current_c > tgt_c:
-        #     current_c -= current_c - (tgt_c + 1)
-        # else:
-        #     current_c += (tgt_c - 1) - current_c
-        # path.append((current_r, current_c))
+    def is_edge_disjoint(self, other: KeyPath) -> bool:
+        first = self.to_complete_path().get_vertices()
+        second = other.to_complete_path().get_vertices()
 
-        # current_r -= current_r - tgt_r if current_r > tgt_r else tgt_r - current_r
-        # path.append((current_r, current_c))
+        return any(  # TODO inefficient
+            first[i] == second[j] and first[i + 1] == second[j + 1]
+            for i, j in itertools.product(range(len(first) - 1), range(len(second) - 1))
+        )
 
-        # if current_c > tgt_c:  # End -> horizontal
-        #     current_c -= 1
-        # else:
-        #     current_c += 1
-        # path.append((current_r, current_c))
 
-        # assert current_r == tgt_r and current_c == tgt_c
+class DirectKeyPath(KeyPath):
+    def __init__(self, start: tuple[int, int], stop: tuple[int, int]) -> None:
+        super().__init__()
 
-    def contains(self, vertex_position: tuple[int, int]) -> bool:
-        if vertex_position in [
-            self._vertices[0],
-            self._vertices[1],
-            self._vertices[3],
-            self._vertices[4],
-        ]:  # First and last are impossible in practice
-            return True
+        start_r, start_c = start
+        stop_r, stop_c = stop
 
-        if vertex_position[0] == self._vertices[1][0]:
-            f = min(self._vertices[1][1], self._vertices[2][1])
-            t = max(self._vertices[1][1], self._vertices[2][1])
+        current_r = start_r
+        current_c = start_c
+        self._vertices = [(current_r, current_c)]
 
-            return vertex_position in [(vertex_position[0], j) for j in range(f, t + 1)]
+        if current_r > stop_r:  # Start -> vertical
+            current_r -= 1
+        else:
+            current_r += 1
+        self._vertices.append((current_r, current_c))
 
-        elif vertex_position[1] == self._vertices[2][1]:
-            f = min(self._vertices[2][0], self._vertices[3][0])
-            t = max(self._vertices[2][0], self._vertices[3][0])
+        if current_c > stop_c:
+            current_c -= current_c - (stop_c + 1)
+        else:
+            current_c += (stop_c - 1) - current_c
+        self._vertices.append((current_r, current_c))
 
-            return vertex_position in [(j, vertex_position[1]) for j in range(f, t + 1)]
+        current_r -= current_r - stop_r if current_r > stop_r else stop_r - current_r
+        self._vertices.append((current_r, current_c))
 
-        return False
+        if current_c > stop_c:  # End -> horizontal
+            current_c -= 1
+        else:
+            current_c += 1
+        self._vertices.append((current_r, current_c))
 
-    def to_normal_path(self) -> NormalPath:
-        path = NormalPath()
-
-        path.add_vertex(self._vertices[0])
-
-        step = 1 if self._vertices[1][1] < self._vertices[2][1] else -1
-        for i in range(self._vertices[1][1], self._vertices[2][1], step):
-            path.add_vertex((self._vertices[1][0], i))
-
-        step = 1 if self._vertices[2][0] < self._vertices[3][0] else -1
-        for i in range(self._vertices[2][0], self._vertices[3][0], step):
-            path.add_vertex((i, self._vertices[2][1]))
-
-        path.add_vertex(self._vertices[3])
-        path.add_vertex(self._vertices[4])
-
-        return path
+        assert current_r == stop_r and current_c == stop_c

@@ -16,16 +16,14 @@ class Mapper(ABC):
         self._cnots: list[tuple[int, int]] = cnots
 
     @abstractmethod
-    def map(self) -> tuple[int, dict[int, int]]:
+    def map(self) -> tuple[int, dict[int, int], tuple[int, int]]:
         pass
 
 
 # Dummy ------------------------------------------------------------------------
 
 
-class Identity(
-    Mapper
-):  # TODO adapt to use no ancillas but still lead to correct mapping
+class Identity(Mapper):
     def map(self):
         n_qubits = int(np.prod(self._grid_dims))
 
@@ -34,17 +32,17 @@ class Identity(
                 f"The input circuit is not mappable to the given grid dimension {self._grid_dims}."
             )
 
-        mapping = {i: i for i in range(n_qubits)}
+        mapping = {
+            i: i for i in range(n_qubits)
+        }  # TODO return only the ones that are actually used?
 
-        return n_qubits, mapping
+        return n_qubits, mapping, self._grid_dims
 
     def __mappable(self, cnots: list[tuple[int, int]], n_qubits: int):
         return not any(cnot[0] >= n_qubits or cnot[1] >= n_qubits for cnot in cnots)
 
 
-class Renaming(
-    Mapper
-):  # TODO adapt to use no ancillas but still lead to correct mapping
+class Renaming(Mapper):
     def map(self):
         n_max = np.prod(self._grid_dims)
         mapping = {}
@@ -63,7 +61,7 @@ class Renaming(
                             f"The input circuit is not mappable to the given grid dimension {self._grid_dims}."
                         )
 
-        return n_qubits, mapping
+        return n_qubits, mapping, self._grid_dims
 
 
 # Paper ------------------------------------------------------------------------
@@ -86,7 +84,9 @@ class PaperIdentity(Mapper):
                 f"The input circuit is not mappable to the given grid dimension {self._grid_dims}."
             )
 
-        mapping = {i: i for i in range(n_qubits)}
+        mapping = {
+            i: i for i in range(n_qubits)
+        }  # TODO return only the ones that are actually used?
 
         return n_qubits, mapping, self._grid_dims
 

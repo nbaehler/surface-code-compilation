@@ -2,9 +2,9 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from helpers import is_data_qubit
+from helpers import unflatten
 from operator_graph import OperatorGraph
-from path import KeyPath, NormalPath
+from path import PaperKeyPath, CompletePath, DirectKeyPath
 
 
 class Scheduler(ABC):
@@ -21,18 +21,24 @@ class Scheduler(ABC):
         self._mapping: dict[int, int] = mapping
 
     @abstractmethod
-    def schedule(self) -> list[list[tuple[int, int]]]:
+    def schedule(self) -> list[CompletePath]:
         pass
 
 
 # Dummy ------------------------------------------------------------------------
 
 
-class Sequential(
-    Scheduler
-):  # TODO still on grid but without ancillas, we should output a list of [path]
+class Sequential(Scheduler):
     def schedule(self):
-        return [[cnot] for cnot in self._cnots]
+        paths = []
+
+        for cnot in self._cnots:
+            start, stop = cnot
+            start = unflatten(start, self._grid_dims)
+            stop = unflatten(stop, self._grid_dims)
+
+            paths.append(DirectKeyPath(start, stop).to_complete_path())
+        return paths
 
 
 # Paper ------------------------------------------------------------------------
@@ -42,21 +48,16 @@ class EDPC(Scheduler):
     def schedule(self):
         operator_graph = OperatorGraph(self._grid_dims, self._mapping, self._cnots)
 
-        (
-            list_operator_edp_sets,
-            list_crossing_vertices,
-        ) = operator_graph._build_operator_edp_sets()
+        operator_edp_sets = operator_graph._build_operator_edp_sets()
 
         q1 = []
-        for i in range(len(list_operator_edp_sets)):
-            p1, p2 = self.__edp_subroutine(
-                list_operator_edp_sets[i], list_crossing_vertices[i]
-            )
+        for operator_edp_set in operator_edp_sets:
+            p1, p2 = self.__edp_subroutine(operator_edp_set)
             q1.append(p1)
             if p2:
                 q1.append(p2)
 
-        operator_graph._build_operator_graph()
+        operator_graph._build_initial_operator_graph()
         terminal_pairs = operator_graph._cnots.copy()  # TODO copy needed?
         q2 = []
 
@@ -74,27 +75,42 @@ class EDPC(Scheduler):
 
         return q1 if len(q1) < len(q2) else q2
 
-    def __edp_subroutine(  # TODO technically fragment, subroutine is not needed here, more in compiler
+    def __edp_subroutine(
         self,
-        operator_edp_set: list[KeyPath],
-        crossing_vertices: set[tuple[int, int]],
-    ) -> tuple[list[NormalPath], list[NormalPath]]:
+        operator_edp_set: list[PaperKeyPath],
+        # crossing_vertices: set[tuple[int, int]],
+    ) -> tuple[list[CompletePath], list[CompletePath]]:
         # Split into two VDP sets
-        if not crossing_vertices:
-            return [path.to_normal_path() for path in operator_edp_set], []
+        vertex_disjoint = True
+        crossing_vertices = []
+        crossing_paths = []
+        for i in range(len(operator_edp_set)):
+            for j in range(i + 1, len(operator_edp_set)):
+                if not operator_edp_set[i].is_vertex_disjoint(operator_edp_set[j]):
+                    vertex_disjoint = False
+                    crossing_vertices.append(operator_edp_set[i])
+                    crossing_paths.append((i, j))
 
+        if vertex_disjoint:
+            return [path.to_complete_path() for path in operator_edp_set], []
+
+        return self.__fragment_edp_set(
+            operator_edp_set, crossing_vertices, crossing_paths
+        )
+
+    def __fragment_edp_set(
+        self,
+        operator_edp_set: list[PaperKeyPath],
+        crossing_vertices: list[tuple[int, int]],
+        corresponding_paths: list[tuple[int, int]],
+    ) -> tuple[list[CompletePath], list[CompletePath]]:
         raise Warning("Not implemented yet")
-
-        # for crossing_vertex in crossing_vertices:
-        #     conflicting_paths = [  # TODO apparently exactly two!!! Why?
-        #         path for path in operator_edp_set if path.contains(crossing_vertex)
-        #     ]
 
     def __greedy_edp(
         self,
         operator_graph: OperatorGraph,
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],
-    ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[NormalPath]]:
+    ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[CompletePath]]:
         A = []
         covered_terminal_pairs = []
 
@@ -120,7 +136,7 @@ class EDPC(Scheduler):
         self,
         operator_graph: OperatorGraph,
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],
-    ) -> tuple[tuple[tuple[int, int], tuple[int, int]], NormalPath]:
+    ) -> tuple[tuple[tuple[int, int], tuple[int, int]], CompletePath]:
         shortest_path_terminal_pair = None
         shortest_path = None
         length = np.inf

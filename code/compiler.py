@@ -1,4 +1,7 @@
-def compile(mapping: dict[int, int], scheduling: list[list[tuple[int, int]]]):
+from path import CompletePath
+
+
+def compile(mapping: dict[int, int], scheduling: list[CompletePath]):
     pass
 
     # long_range_cnots = [] #TODO maybe useful in compiler

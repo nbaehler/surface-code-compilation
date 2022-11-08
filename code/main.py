@@ -5,7 +5,7 @@ from pathlib import Path
 import qsharp
 
 from compiler import compile
-from mapper import PaperRenaming, Identity, Renaming
+from mapper import PaperRenaming, PaperIdentity, Identity, Renaming
 from qir_in import log_gates
 from qir_out import generate_qir
 from scheduler import EDPC, Sequential
@@ -52,14 +52,29 @@ def main():
 
     grid_dims = (6, 6)
 
-    (
-        n_qubits,
-        mapping,
-        grid_dims,
-    ) = PaperRenaming(  # TODO grid is the only one the change grid dims?
+    # (
+    #     n_qubits,
+    #     mapping,
+    #     grid_dims,
+    # ) = Identity(grid_dims, cnots).map()
+
+    # (
+    #     n_qubits,
+    #     mapping,
+    #     grid_dims,
+    # ) = Renaming(grid_dims, cnots).map()
+
+    # (
+    #     n_qubits,
+    #     mapping,
+    #     grid_dims,
+    # ) = PaperIdentity(grid_dims, cnots).map()
+
+    (n_qubits, mapping, grid_dims,) = PaperRenaming(
         grid_dims, cnots
     ).map()  # TODO do I need those abstract classes?
 
+    # scheduling = Sequential(grid_dims, cnots, mapping).schedule()
     scheduling = EDPC(grid_dims, cnots, mapping).schedule()
 
     ir = compile(mapping, scheduling)  # TODO input to generator
