@@ -84,7 +84,7 @@ def main():
     print(f"Mapping of qubits: {mapping}")
     print(f"Scheduling: {scheduling}\n")
 
-    res_qir = generate_qir(n_qubits, mapping, scheduling)
+    res_qir = generate_qir(n_qubits, ir)
 
     print(f"The resulting QIR code:\n{res_qir}")
 

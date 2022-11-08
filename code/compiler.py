@@ -1,7 +1,7 @@
 from path import CompletePath
 
 
-def compile(mapping: dict[int, int], scheduling: list[CompletePath]):
+def compile(mapping: dict[int, int], scheduling: list[CompletePath]) -> None:
     pass
 
     # long_range_cnots = [] #TODO maybe useful in compiler

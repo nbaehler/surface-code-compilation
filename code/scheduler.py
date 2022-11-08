@@ -75,36 +75,88 @@ class EDPC(Scheduler):
 
         return q1 if len(q1) < len(q2) else q2
 
-    def __edp_subroutine(
+    def __edp_subroutine(  # TODO different from the paper
         self,
         operator_edp_set: list[PaperKeyPath],
-        # crossing_vertices: set[tuple[int, int]],
     ) -> tuple[list[CompletePath], list[CompletePath]]:
         # Split into two VDP sets
+        paths = [path.to_complete_path() for path in operator_edp_set]
+
         vertex_disjoint = True
+        vertex_disjoint_paths = []
         crossing_vertices = []
         crossing_paths = []
-        for i in range(len(operator_edp_set)):
-            for j in range(i + 1, len(operator_edp_set)):
-                if not operator_edp_set[i].is_vertex_disjoint(operator_edp_set[j]):
+        for i in range(len(paths)):
+            path_is_vertex_disjoint = True
+            for j in range(i + 1, len(paths)):
+                if not paths[i].is_vertex_disjoint(paths[j]):
                     vertex_disjoint = False
-                    crossing_vertices.append(operator_edp_set[i])
+                    path_is_vertex_disjoint = False
+                    crossing_vertices.append(paths[i])
                     crossing_paths.append((i, j))
 
+            if path_is_vertex_disjoint:
+                vertex_disjoint_paths.append(i)
+
         if vertex_disjoint:
-            return [path.to_complete_path() for path in operator_edp_set], []
+            return paths, []
 
         return self.__fragment_edp_set(
-            operator_edp_set, crossing_vertices, crossing_paths
+            paths, vertex_disjoint_paths, crossing_vertices, crossing_paths
         )
 
     def __fragment_edp_set(
         self,
-        operator_edp_set: list[PaperKeyPath],
+        paths: list[CompletePath],
+        vertex_disjoint_paths: list[int],
         crossing_vertices: list[tuple[int, int]],
-        corresponding_paths: list[tuple[int, int]],
+        crossing_paths: list[tuple[int, int]],
     ) -> tuple[list[CompletePath], list[CompletePath]]:
-        raise Warning("Not implemented yet")
+        p1, p2 = [paths[i] for i in vertex_disjoint_paths], []
+
+        splits = {}
+        for i in range(
+            len(crossing_vertices)
+        ):  # TODO is this condition sufficient? Does it comply with the constraints on edges etc. in the paper?
+            if crossing_paths[i][0] not in splits:
+                splits[crossing_paths[i][0]] = [crossing_vertices[i]]
+            else:
+                no_neighbors = True
+                for vertex in splits[crossing_paths[i][0]]:
+                    distance = abs(vertex[0] - crossing_vertices[i][0]) + abs(
+                        vertex[1] - crossing_vertices[i][1]
+                    )
+                    assert distance != 0
+                    if distance == 1:
+                        no_neighbors = False
+                        break
+                if no_neighbors:
+                    splits[crossing_paths[i][0]].append(crossing_vertices[i])
+                elif crossing_paths[i][1] in splits:
+                    no_neighbors = True
+                    for vertex in splits[crossing_paths[i][1]]:
+                        distance = abs(vertex[0] - crossing_vertices[i][0]) + abs(
+                            vertex[1] - crossing_vertices[i][1]
+                        )
+                        assert distance != 0
+                        if distance == 1:
+                            no_neighbors = False
+                            break
+                    if no_neighbors:
+                        splits[crossing_paths[i][1]].append(crossing_vertices[i])
+                    else:
+                        raise RuntimeError(
+                            "Crossing vertex is neighbor to a vertex of both paths!!!!"
+                        )  # TODO shouldn't happen, but not sure
+
+                else:
+                    splits[crossing_paths[i][1]] = [crossing_vertices[i]]
+        for i in splits:
+            first, second = paths[i].split(splits[i])
+            p1.extend(first)
+            p2.extend(second)
+
+        return p1, p2
 
     def __greedy_edp(
         self,

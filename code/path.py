@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 from abc import ABC
 
@@ -33,8 +35,36 @@ class CompletePath(Path):
     def reverse(self) -> None:
         self._vertices.reverse()
 
-    def get_vertices(self) -> list[tuple[int, int]]:
-        return self._vertices
+    def is_vertex_disjoint(self, other: CompletePath) -> bool:
+        return not set(self._vertices).intersection(
+            set(other._vertices)
+        )  # TODO inefficient?
+
+    def split( # TODO does this guarantee that the split paths are disjoint?
+        self, split_vertices: list[tuple[int, int]]
+    ) -> tuple[list[CompletePath], list[CompletePath]]:
+        p1, p2 = [], []
+
+        indices = [self._vertices.index(v) for v in split_vertices]
+        indices.sort()
+
+        phase = False
+        start = 0
+        for split_index in indices:
+            if not phase:
+                p1.append(CompletePath(self._vertices[start:split_index]))
+            else:
+                p2.append(CompletePath(self._vertices[start:split_index]))
+
+            start = split_index - 1
+            phase = not phase
+
+        if not phase:
+            p1.append(CompletePath(self._vertices[start:]))
+        else:
+            p2.append(CompletePath(self._vertices[start:]))
+
+        return p1, p2
 
 
 class KeyPath(Path):
@@ -78,15 +108,9 @@ class PaperKeyPath(KeyPath):
             (stop_r, stop_c),
         ]
 
-    def is_vertex_disjoint(self, other: KeyPath) -> bool:
-        first = set(self.to_complete_path().get_vertices())  # TODO inefficient?
-        second = set(other.to_complete_path().get_vertices())
-
-        return not first.intersection(second)
-
-    def is_edge_disjoint(self, other: KeyPath) -> bool:
-        first = self.to_complete_path().get_vertices()
-        second = other.to_complete_path().get_vertices()
+    def is_edge_disjoint(self, other: PaperKeyPath) -> bool:
+        first = self._vertices
+        second = other._vertices
 
         return any(  # TODO inefficient
             first[i] == second[j] and first[i + 1] == second[j + 1]
