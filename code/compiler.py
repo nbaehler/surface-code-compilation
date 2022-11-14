@@ -1,29 +1,39 @@
-from path import CompletePath
+from gate import Gate
+from helpers import is_data_qubit
+from path import Path
 
 
-def compile(mapping: dict[int, int], scheduling: list[CompletePath]) -> None:
-    pass
+class Compiler:
+    def __init__(self, mapping: dict[int, int], scheduling: list[list[Path]]) -> None:
+        self._mapping: dict[int, int] = mapping
+        self._scheduling: list[list[Path]] = scheduling
 
-    # long_range_cnots = [] #TODO maybe useful in compiler
-    # phase1 = []
-    # phase2 = []
+    def compile(self) -> list[list[Gate]]:
+        ir = []
+        for phase in self._scheduling:
+            phase_ir = []
+            for path in phase:
+                if is_data_qubit(path[0]):
+                    if is_data_qubit(path[-1]):
+                        phase_ir.append(self._compile_long_range_cnot(path))
+                    else:
+                        phase_ir.append(self._compile_control_to_ancilla(path))
+                elif is_data_qubit(path[-1]):
+                    phase_ir.append(self._compile_ancilla_to_target(path))
+                else:
+                    phase_ir.append(self._compile_ancilla_to_ancilla(path))
+            ir.append(phase_ir)
 
-    # for segment in p1:
-    #     head = segment[0]
-    #     tail = segment[-1]
+        return ir
 
-    #     if is_data_qubit(head) and is_data_qubit(tail):
-    #         long_range_cnots.append(segment)
-    #     else:
-    #         phase1.append(segment)
+    def _compile_long_range_cnot(self, path: Path) -> list[Gate]:
+        return []
 
-    # for segment in p2:
-    #     head = segment[0]
-    #     tail = segment[-1]
+    def _compile_control_to_ancilla(self, path: Path) -> list[Gate]:
+        return []
 
-    #     if is_data_qubit(head) and is_data_qubit(tail):
-    #         long_range_cnots.append(segment)
-    #     else:
-    #         phase2.append(segment)
+    def _compile_ancilla_to_target(self, path: Path) -> list[Gate]:
+        return []
 
-    # return long_range_cnots, phase1, phase2
+    def _compile_ancilla_to_ancilla(self, path: Path) -> list[Gate]:
+        return []

@@ -4,7 +4,7 @@ import numpy as np
 
 from helpers import unflatten
 from operator_graph import OperatorGraph
-from path import PaperKeyPath, CompletePath, DirectKeyPath
+from path import PaperKeyPath, Path, DirectKeyPath
 
 
 class Scheduler(ABC):
@@ -21,7 +21,7 @@ class Scheduler(ABC):
         self._mapping: dict[int, int] = mapping
 
     @abstractmethod
-    def schedule(self) -> list[CompletePath]:
+    def schedule(self) -> list[list[Path]]:
         pass
 
 
@@ -37,7 +37,7 @@ class Sequential(Scheduler):
             start = unflatten(start, self._grid_dims)
             stop = unflatten(stop, self._grid_dims)
 
-            paths.append(DirectKeyPath(start, stop).to_complete_path())
+            paths.append([DirectKeyPath(start, stop).extend_to_path()])
         return paths
 
 
@@ -78,9 +78,9 @@ class EDPC(Scheduler):
     def __edp_subroutine(  # TODO different from the paper
         self,
         operator_edp_set: list[PaperKeyPath],
-    ) -> tuple[list[CompletePath], list[CompletePath]]:
+    ) -> tuple[list[Path], list[Path]]:
         # Split into two VDP sets
-        paths = [path.to_complete_path() for path in operator_edp_set]
+        paths = [path.extend_to_path() for path in operator_edp_set]
 
         vertex_disjoint = True
         vertex_disjoint_paths = []
@@ -107,11 +107,11 @@ class EDPC(Scheduler):
 
     def __fragment_edp_set(
         self,
-        paths: list[CompletePath],
+        paths: list[Path],
         vertex_disjoint_paths: list[int],
         crossing_vertices: list[tuple[int, int]],
         crossing_paths: list[tuple[int, int]],
-    ) -> tuple[list[CompletePath], list[CompletePath]]:
+    ) -> tuple[list[Path], list[Path]]:
         p1, p2 = [paths[i] for i in vertex_disjoint_paths], []
 
         splits = {}
@@ -162,7 +162,7 @@ class EDPC(Scheduler):
         self,
         operator_graph: OperatorGraph,
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],
-    ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[CompletePath]]:
+    ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[Path]]:
         A = []
         covered_terminal_pairs = []
 
@@ -188,7 +188,7 @@ class EDPC(Scheduler):
         self,
         operator_graph: OperatorGraph,
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],
-    ) -> tuple[tuple[tuple[int, int], tuple[int, int]], CompletePath]:
+    ) -> tuple[tuple[tuple[int, int], tuple[int, int]], Path]:
         shortest_path_terminal_pair = None
         shortest_path = None
         length = np.inf

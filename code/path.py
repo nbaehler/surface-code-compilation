@@ -2,13 +2,27 @@ from __future__ import annotations
 
 import itertools
 from abc import ABC
+from enum import Enum
 
 from helpers import is_data_qubit
 
 
+class PathType(Enum):
+    LONG_RANGE_CNOT = 0
+    PHASE_1 = 1
+    PHASE_2 = 2
+
+
 class Path(ABC):
-    def __init__(self) -> None:
-        self._vertices = []
+    def __init__(
+        self,
+        type: PathType = None,
+        vertices: list[tuple[int, int]] = None,
+    ) -> None:
+        super().__init__()
+
+        self._vertices = [] if vertices is None else vertices
+        self._type = PathType.LONG_RANGE_CNOT if type is None else type
 
     def __getitem__(self, i: int) -> tuple[int, int]:
         if i < 0:
@@ -22,27 +36,20 @@ class Path(ABC):
     def __len__(self) -> int:
         return len(self._vertices)
 
-
-class CompletePath(Path):
-    def __init__(self, vertices: list[tuple[int, int]] = None) -> None:
-        super().__init__()
-
-        self._vertices = [] if vertices is None else vertices
-
     def add_vertex(self, vertex: tuple[int, int]) -> None:
         self._vertices.append(vertex)
 
     def reverse(self) -> None:
         self._vertices.reverse()
 
-    def is_vertex_disjoint(self, other: CompletePath) -> bool:
+    def is_vertex_disjoint(self, other: Path) -> bool:
         return not set(self._vertices).intersection(
             set(other._vertices)
         )  # TODO inefficient?
 
-    def split( # TODO does this guarantee that the split paths are disjoint?
+    def split(  # TODO does this guarantee that the split paths are disjoint?
         self, split_vertices: list[tuple[int, int]]
-    ) -> tuple[list[CompletePath], list[CompletePath]]:
+    ) -> tuple[list[Path], list[Path]]:
         p1, p2 = [], []
 
         indices = [self._vertices.index(v) for v in split_vertices]
@@ -52,17 +59,17 @@ class CompletePath(Path):
         start = 0
         for split_index in indices:
             if not phase:
-                p1.append(CompletePath(self._vertices[start:split_index]))
+                p1.append(Path(PathType.PHASE_1, self._vertices[start:split_index]))
             else:
-                p2.append(CompletePath(self._vertices[start:split_index]))
+                p2.append(Path(PathType.PHASE_2, self._vertices[start:split_index]))
 
             start = split_index - 1
             phase = not phase
 
         if not phase:
-            p1.append(CompletePath(self._vertices[start:]))
+            p1.append(Path(PathType.PHASE_1, self._vertices[start:]))
         else:
-            p2.append(CompletePath(self._vertices[start:]))
+            p2.append(Path(PathType.PHASE_2, self._vertices[start:]))
 
         return p1, p2
 
@@ -71,8 +78,8 @@ class KeyPath(Path):
     def __init__(self) -> None:
         super().__init__()
 
-    def to_complete_path(self) -> CompletePath:
-        path = CompletePath()
+    def extend_to_path(self) -> Path:
+        path = Path(self._type)
 
         path.add_vertex(self._vertices[0])
 

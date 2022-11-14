@@ -4,7 +4,7 @@ from pathlib import Path
 
 import qsharp
 
-from compiler import compile
+from compiler import Compiler
 from mapper import PaperRenaming, PaperIdentity, Identity, Renaming
 from qir_in import log_gates
 from qir_out import generate_qir
@@ -55,29 +55,33 @@ def main():
     # (
     #     n_qubits,
     #     mapping,
-    #     grid_dims,
+    #     grid_dims
     # ) = Identity(grid_dims, cnots).map()
 
     # (
     #     n_qubits,
     #     mapping,
-    #     grid_dims,
+    #     grid_dims
     # ) = Renaming(grid_dims, cnots).map()
 
     # (
     #     n_qubits,
     #     mapping,
-    #     grid_dims,
+    #     grid_dims
     # ) = PaperIdentity(grid_dims, cnots).map()
 
-    (n_qubits, mapping, grid_dims,) = PaperRenaming(
+    (n_qubits, mapping, grid_dims) = PaperRenaming(
         grid_dims, cnots
     ).map()  # TODO do I need those abstract classes?
 
     # scheduling = Sequential(grid_dims, cnots, mapping).schedule()
-    scheduling = EDPC(grid_dims, cnots, mapping).schedule()
+    scheduling = EDPC(
+        grid_dims, cnots, mapping
+    ).schedule()  # TODO do I need those abstract classes?
 
-    ir = compile(mapping, scheduling)  # TODO input to generator
+    ir = Compiler(
+        mapping, scheduling
+    ).compile()  # TODO do I need those abstract classes?
 
     print("\nInfos:")
     print(f"Number of qubits used: {n_qubits}")

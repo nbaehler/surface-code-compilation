@@ -1,7 +1,7 @@
 import numpy as np
 
 from helpers import unflatten
-from path import PaperKeyPath, CompletePath
+from path import PaperKeyPath, Path
 from vertex import Ancilla, Start, Stop, Vertex
 
 
@@ -55,7 +55,7 @@ class OperatorGraph:
         self._operator_graph[(tgt[0], tgt[1] - 1)].remove_neighbor(tgt)
         self._operator_graph[(tgt[0], tgt[1] + 1)].remove_neighbor(tgt)
 
-    def _remove_ancillas_in_path(self, path: CompletePath) -> None:
+    def _remove_ancillas_in_path(self, path: Path) -> None:
         for i in range(1, len(path) - 2):
             vertex_position = path[i]
             next_vertex_position = path[i + 1]
@@ -65,7 +65,7 @@ class OperatorGraph:
 
     def _shortest_path(  # TODO BFS algorithm, paper uses Dijkstra's algorithm
         self, start: tuple[int, int], stop: tuple[int, int]
-    ) -> CompletePath:
+    ) -> Path:
         distances = np.full(self._grid_dims, -1, dtype=int)
         queue = [start]
         distances[start] = 0
@@ -87,8 +87,8 @@ class OperatorGraph:
 
     def __compute_path_from_distances(
         self, start: tuple[int, int], stop: tuple[int, int], distances: np.ndarray
-    ) -> CompletePath:
-        path = CompletePath()
+    ) -> Path:
+        path = Path()  # TODO fix type here!!
         current = stop
 
         while current != start:
