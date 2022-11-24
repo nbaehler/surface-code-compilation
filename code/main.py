@@ -6,43 +6,47 @@ import qsharp
 
 from compiler import Compiler
 from mapper import PaperRenaming, PaperIdentity, Identity, Renaming
-from qir_in import log_gates
-from qir_out import generate_qir
+from qir_parser import parse_qir
+from qir_generator import generate_qir
 from scheduler import EDPC, Sequential
 
 # from Circuits import testCircuit
 
+# -------------------------------
+
+# in_qir = testCircuit.as_qir()
+
+# with open("temp.ll", "w") as f:
+#     f.writelines(in_qir)
+
+# os.system("llvm-as temp.ll")
+
+# cnots = logGates("temp.bc")
+
+# os.remove("temp.ll")
+# os.remove("temp.bc")
+
+# -------------------------------
+
+# path = Path(__file__).parent
+# file_path = os.path.join(path, "bitcode/bernstein_vazirani.bc")
+
+# cnots = logGates(file_path)
+
+# -------------------------------
+
 
 def main():
+    # Read QIR file generated using the QIR-Alliance generator
     # in_qir = testCircuit.as_qir()
 
+    # Write temporary llvm file so that the parser can read it
     # with tempfile.NamedTemporaryFile(
     #     suffix=".ll"
     # ) as f:  # https://github.com/qir-alliance/pyqir/blob/a99afdb8126b1ff0a331bdc81aed9930f7bd23b9/examples/evaluator/teleport.py#L36-L40
     #     f.write(in_qir.encode("utf-8"))
     #     f.flush()
-    #     cnots = log_gates(f.name)
-
-    # -------------------------------
-
-    # in_qir = testCircuit.as_qir()
-
-    # with open("temp.ll", "w") as f:
-    #     f.writelines(in_qir)
-
-    # os.system("llvm-as temp.ll")
-
-    # cnots = logGates("temp.bc")
-
-    # os.remove("temp.ll")
-    # os.remove("temp.bc")
-
-    # -------------------------------
-
-    # path = Path(__file__).parent
-    # file_path = os.path.join(path, "bitcode/bernstein_vazirani.bc")
-
-    # cnots = logGates(file_path)
+    #     cnots = parse_qir(f.name)
 
     # -------------------------------
 
@@ -50,35 +54,28 @@ def main():
 
     # -------------------------------
 
+    # Fix the grid dimensions and select strategies
     grid_dims = (6, 6)
 
-    # (
-    #     n_qubits,
-    #     mapping,
-    #     grid_dims
-    # ) = Identity(grid_dims, cnots).map()
+    # mapping_strategy = Identity
+    # mapping_strategy = Renaming
+    # mapping_strategy = PaperIdentity
+    mapping_strategy = PaperRenaming
 
-    # (
-    #     n_qubits,
-    #     mapping,
-    #     grid_dims
-    # ) = Renaming(grid_dims, cnots).map()
+    # scheduling_strategy = Sequential
+    scheduling_strategy = EDPC
 
-    # (
-    #     n_qubits,
-    #     mapping,
-    #     grid_dims
-    # ) = PaperIdentity(grid_dims, cnots).map()
-
-    (n_qubits, mapping, grid_dims) = PaperRenaming(
+    # Map the qubits according to strategy
+    (n_qubits, mapping, grid_dims) = mapping_strategy(
         grid_dims, cnots
     ).map()  # TODO do I need those abstract classes?
 
-    # scheduling = Sequential(grid_dims, cnots, mapping).schedule()
-    scheduling = EDPC(
+    # Schedule the CNOTs according to strategy
+    scheduling = scheduling_strategy(
         grid_dims, cnots, mapping
     ).schedule()  # TODO do I need those abstract classes?
 
+    # Compile the scheduled CNOTs into a intermediate representation
     ir = Compiler(
         mapping, scheduling
     ).compile()  # TODO do I need those abstract classes?
@@ -88,9 +85,12 @@ def main():
     print(f"Mapping of qubits: {mapping}")
     print(f"Scheduling: {scheduling}\n")
 
+    # Generate QIR from intermediate representation
     res_qir = generate_qir(n_qubits, ir)
 
     print(f"The resulting QIR code:\n{res_qir}")
+
+    # TODO save qir as file and run it with the QIR-Alliance simulator
 
 
 if __name__ == "__main__":

@@ -1,8 +1,6 @@
-from typing import Any, Dict
-
 from pyqir.evaluator import GateSet, NonadaptiveEvaluator
 
-
+# Logger for all the instructions that are important for us, so far only cnots
 class Logger(GateSet):
     def __init__(self) -> None:
         self.number_of_qubits: int = 0
@@ -72,20 +70,9 @@ class Logger(GateSet):
         # self.instructions.append(f"z qubit[{qubit}]")
         pass
 
-    def finish(self, metadata: Dict[str, Any]) -> None:
-        super().finish(metadata)
-        self.number_of_qubits = metadata["number_of_qubits"]
-        self.number_of_registers = self.number_of_qubits
 
-    def print(self) -> None:
-        print(f"qubits[{self.number_of_qubits}]")
-        print(f"out[{self.number_of_registers}]")
-
-        for instruction in self.instructions:
-            print(instruction)
-
-
-def log_gates(file: str):
+# Parse the qir file and log all the cnots
+def parse_qir(file: str):
     evaluator = (
         NonadaptiveEvaluator()
     )  # TODO not complete syntax https://github.com/qir-alliance/pyqir/tree/main/pyqir-evaluator#pyqir-evaluator

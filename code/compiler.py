@@ -2,12 +2,14 @@ from gate import Gate
 from helpers import is_data_qubit
 from path import Path
 
-
+# Class the compiles a scheduling into a intermediate representation using a
+# mapping as well
 class Compiler:
     def __init__(self, mapping: dict[int, int], scheduling: list[list[Path]]) -> None:
         self._mapping: dict[int, int] = mapping
         self._scheduling: list[list[Path]] = scheduling
 
+    # Compile into the intermediate representation
     def compile(self) -> list[list[Gate]]:
         ir = []
         for phase in self._scheduling:

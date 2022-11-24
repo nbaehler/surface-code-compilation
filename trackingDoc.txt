@@ -42,3 +42,22 @@ conda env export > environment.yml
 - Microsoft intern
 
 
+--------------------------------------------------------------------------------
+
+- QIR alliance
+- Microsoft internships only 3 months
+- Check correctness for fragmenting into phases -> they propose a system of constraints for each crossing vertex etc.
+- Advent calendar, blog post
+- Requirements on code?
+- Start Jupyter notebook etc.
+
+--------------------------------------------------------------------------------
+
+Write code example with generator
+Export using generator
+https://devblogs.microsoft.com/qsharp/q-holiday-calendar-2022/
+
+29.11. Midterm presentation (45 minutes roughly, be flexible)
+ 40% Intro, explain surface code, long range cnots, define the problem
+ 40% Concrete algo
+ 20% Demo
