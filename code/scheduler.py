@@ -1,3 +1,4 @@
+import itertools
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -131,9 +132,10 @@ class EDPC(Scheduler):
             path_is_vertex_disjoint = True
             for j in range(i + 1, len(paths)):
                 # If not, keep track of the crossing vertices and paths
-                if not paths[i].is_vertex_disjoint(paths[j]):
+                current_crossing_vertices = paths[i].crossing_vertices(paths[j])
+                if not current_crossing_vertices:
                     path_is_vertex_disjoint = False
-                    crossing_vertices.append(paths[i])
+                    crossing_vertices.append(current_crossing_vertices)
                     crossing_paths_idx_pairs.append((i, j))
 
             #  Check if path is
@@ -170,45 +172,12 @@ class EDPC(Scheduler):
         # the two phases such that at no crossing vertex both crossing path
         # fragments are placed in the same phase
         splits = {}
-        for i in range(
-            len(crossing_vertices)
-        ):  # TODO is this condition sufficient? Does it comply with the constraints on edges etc. in the paper?
-            neighbors = False
-            for j in range(2):
-                # Check it the crossing path is already marked to be split
-                if crossing_paths_idx_pairs[i][j] not in splits:
-                    splits[crossing_paths_idx_pairs[i][j]] = [crossing_vertices[i]]
-                else:
-                    # Check that the given path does not contain neighboring
-                    # crossing vertices
-                    no_neighbors = True
-                    for vertex in splits[crossing_paths_idx_pairs[i][j]]:
-                        distance = abs(vertex[0] - crossing_vertices[i][0]) + abs(
-                            vertex[1] - crossing_vertices[i][1]
-                        )
-
-                        # Check that the same crossing vertex is not already in the
-                        # list of crossing vertices for the given crossing path
-                        if distance == 1:
-                            no_neighbors = False
-                            break
-
-                    # If the given path does not contain neighboring crossing
-                    # vertices, add to new one to the list
-                    if no_neighbors:
-                        splits[crossing_paths_idx_pairs[i][j]].append(
-                            crossing_vertices[i]
-                        )
-                    # In both crossing path the same crossing vertex is neighbor
-                    # of another crossing vertex
-                    elif neighbors:
-                        raise RuntimeError(
-                            "Crossing vertex is neighbor to a vertex of both paths!!!!"
-                        )  # TODO shouldn't happen, but not sure
-                    # In one of the crossing paths the given crossing vertex is
-                    # a neighbor of another crossing vertex
-                    else:
-                        neighbors = True
+        for i, j in itertools.product(range(len(crossing_vertices)), range(2)):
+            # Check it the crossing path is already marked to be split
+            if crossing_paths_idx_pairs[i][j] not in splits:
+                splits[crossing_paths_idx_pairs[i][j]] = [crossing_vertices[i]]
+            else:
+                splits[crossing_paths_idx_pairs[i][j]].append(crossing_vertices[i])
 
         # Split the crossing paths into the two phases
         for i in splits:

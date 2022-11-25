@@ -31,12 +31,12 @@ class OperatorGraph:
     ) -> None:
         (ctrl, tgt) = terminal
         self._operator_graph[ctrl] = Start(ctrl)
-        self._operator_graph[(ctrl[0] - 1, ctrl[1])].add_neighbor(ctrl)
-        self._operator_graph[(ctrl[0] + 1, ctrl[1])].add_neighbor(ctrl)
+        self._operator_graph[(ctrl[0] - 1, ctrl[1])].append_neighbor(ctrl)
+        self._operator_graph[(ctrl[0] + 1, ctrl[1])].append_neighbor(ctrl)
 
         self._operator_graph[tgt] = Stop(tgt)
-        self._operator_graph[(tgt[0], tgt[1] - 1)].add_neighbor(tgt)
-        self._operator_graph[(tgt[0], tgt[1] + 1)].add_neighbor(tgt)
+        self._operator_graph[(tgt[0], tgt[1] - 1)].append_neighbor(tgt)
+        self._operator_graph[(tgt[0], tgt[1] + 1)].append_neighbor(tgt)
 
     # Remove a terminal pair from the operator graph
     def _remove_terminal_pair(

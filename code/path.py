@@ -48,9 +48,9 @@ class Path:
     def reverse(self) -> None:
         self._vertices.reverse()
 
-    # Check if the path is vertex-disjoint from another path
-    def is_vertex_disjoint(self, other: Path) -> bool:
-        return not set(self._vertices).intersection(set(other._vertices))
+    # Return the set of crossing vertices between two paths
+    def crossing_vertices(self, other: Path) -> set[tuple[int, int]]:
+        return set(self._vertices).intersection(set(other._vertices))
 
     # Check if the path is edge-disjoint from another path
     def is_edge_disjoint(self, other: Path) -> bool:
@@ -58,10 +58,10 @@ class Path:
         second = other._vertices
 
         # Check if any pair of edges are equal
-        return any(  # TODO inefficient
-            first[i] == second[j] and first[i + 1] == second[j + 1]
-            for i, j in itertools.product(range(len(first) - 1), range(len(second) - 1))
-        )
+        e1 = {tuple(first[i : i + 2]) for i in range(len(first) - 1)}
+        e2 = {tuple(second[i : i + 2]) for i in range(len(second) - 1)}
+
+        return not e1.intersection(e2)
 
     # Split the path into several paths at the given vertices
     def split(  # TODO does this guarantee that the split paths are disjoint? Iterate over all crossing, label in both directions accordingly, ig a violation occurs we have a problem
