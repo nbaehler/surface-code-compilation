@@ -1,61 +1,27 @@
-import os
 import tempfile
-from pathlib import Path
-
-import qsharp
 
 from compiler import Compiler
-from mapper import PaperRenaming, PaperIdentity, Identity, Renaming
-from qir_parser import parse_qir
+from input_circuit import input_circuit
+from mapper import Identity, PaperIdentity, PaperRenaming, Renaming
 from qir_generator import generate_qir
+from qir_parser import parse_qir
 from scheduler import EDPC, Sequential
-
-# from Circuits import testCircuit
-
-# -------------------------------
-
-# in_qir = testCircuit.as_qir()
-
-# with open("temp.ll", "w") as f:
-#     f.writelines(in_qir)
-
-# os.system("llvm-as temp.ll")
-
-# cnots = logGates("temp.bc")
-
-# os.remove("temp.ll")
-# os.remove("temp.bc")
-
-# -------------------------------
-
-# path = Path(__file__).parent
-# file_path = os.path.join(path, "bitcode/bernstein_vazirani.bc")
-
-# cnots = logGates(file_path)
-
-# -------------------------------
 
 
 def main():
     # Read QIR file generated using the QIR-Alliance generator
-    # in_qir = testCircuit.as_qir()
+    in_circ, grid_dims = input_circuit()
+    in_qir = in_circ.ir()
 
     # Write temporary llvm file so that the parser can read it
-    # with tempfile.NamedTemporaryFile(
-    #     suffix=".ll"
-    # ) as f:  # https://github.com/qir-alliance/pyqir/blob/a99afdb8126b1ff0a331bdc81aed9930f7bd23b9/examples/evaluator/teleport.py#L36-L40
-    #     f.write(in_qir.encode("utf-8"))
-    #     f.flush()
-    #     cnots = parse_qir(f.name)
+    with tempfile.NamedTemporaryFile(
+        suffix=".ll"
+    ) as f:  # https://github.com/qir-alliance/pyqir/blob/a99afdb8126b1ff0a331bdc81aed9930f7bd23b9/examples/evaluator/teleport.py#L36-L40
+        f.write(in_qir.encode("utf-8"))
+        f.flush()
+        cnots = parse_qir(f.name)
 
-    # -------------------------------
-
-    cnots = [(0, 1), (15, 1)]
-
-    # -------------------------------
-
-    # Fix the grid dimensions and select strategies
-    grid_dims = (6, 6)
+    # Select strategies
 
     # mapping_strategy = Identity
     # mapping_strategy = Renaming
@@ -83,7 +49,11 @@ def main():
     print("\nInfos:")
     print(f"Number of qubits used: {n_qubits}")
     print(f"Mapping of qubits: {mapping}")
-    print(f"Scheduling: {scheduling}\n")
+
+    scheduling_str = ",\n".join(
+        [", ".join([str(path) for path in phase]) for phase in scheduling]
+    )
+    print(f"Scheduling:\n[{scheduling_str}]\n")
 
     # Generate QIR from intermediate representation
     res_qir = generate_qir(n_qubits, ir)

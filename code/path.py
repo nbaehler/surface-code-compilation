@@ -40,6 +40,10 @@ class Path:
     def __len__(self) -> int:
         return len(self._vertices)
 
+    # String
+    def __str__(self) -> str:
+        return str(self._vertices)
+
     # Append a vertex to the path
     def append_vertex(self, vertex: tuple[int, int]) -> None:
         self._vertices.append(vertex)
@@ -144,14 +148,10 @@ class PaperKeyPath(KeyPath):
         ]
 
     # Check if the path is edge-disjoint from another path
-    def is_edge_disjoint(self, other: PaperKeyPath) -> bool:
-        first = self._vertices
-        second = other._vertices
-
-        return any(  # TODO Adapt to this path type
-            first[i] == second[j] and first[i + 1] == second[j + 1]
-            for i, j in itertools.product(range(len(first) - 1), range(len(second) - 1))
-        )
+    def is_edge_disjoint(
+        self, other: PaperKeyPath
+    ) -> bool:  # TODO more efficient, direct way
+        return self.extend_to_path().is_edge_disjoint(other.extend_to_path())
 
 
 # Class for KeyPaths that are optimized in the sense that they are shorter than the paths described in the paper
@@ -196,12 +196,7 @@ class DirectKeyPath(KeyPath):
         # End
         assert current_r == stop_r and current_c == stop_c
 
-    # Check if the path is edge-disjoint from another path
-    def is_edge_disjoint(self, other: PaperKeyPath) -> bool:
-        first = self._vertices
-        second = other._vertices
-
-        return any(  # TODO Adapt to this path type
-            first[i] == second[j] and first[i + 1] == second[j + 1]
-            for i, j in itertools.product(range(len(first) - 1), range(len(second) - 1))
-        )
+    def is_edge_disjoint(
+        self, other: PaperKeyPath
+    ) -> bool:  # TODO more efficient, direct way
+        return self.extend_to_path().is_edge_disjoint(other.extend_to_path())

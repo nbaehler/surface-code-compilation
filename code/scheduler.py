@@ -1,4 +1,3 @@
-import itertools
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -57,9 +56,8 @@ class EDPC(Scheduler):
             if p2:
                 q1.append(p2)
 
-        # Build operator graph and initialize it
+        # Build operator graph
         operator_graph = OperatorGraph(self._grid_dims, self._cnots)
-        operator_graph._build_initial_operator_graph()
         terminal_pairs = operator_graph._cnots.copy()  # TODO copy needed?
 
         # Second approach, using the greedy algorithm
@@ -75,10 +73,10 @@ class EDPC(Scheduler):
             assert covered_terminal_pairs != []
 
             # Remove the covered terminal pairs
-            terminal_pairs = [
-                pair for pair in terminal_pairs if pair not in covered_terminal_pairs
-            ]
-            q2.extend(p_star)
+            for pair in covered_terminal_pairs:
+                terminal_pairs.remove(pair)
+
+            q2.append(p_star)
 
         # Pick the shorter scheduling of both approaches
         return q1 if len(q1) < len(q2) else q2
@@ -118,7 +116,7 @@ class EDPC(Scheduler):
         return operator_edp_sets
 
     # Split operator EDP set into two operator VDP sets
-    def __edp_subroutine(  # TODO different from the paper
+    def __edp_subroutine(  # TODO slightly different from the paper
         self,
         operator_edp_set: list[PaperKeyPath],
     ) -> tuple[list[Path], list[Path]]:
@@ -131,11 +129,9 @@ class EDPC(Scheduler):
         for i in range(len(paths)):
             path_is_vertex_disjoint = True
             for j in range(i + 1, len(paths)):
-                # If not, keep track of the crossing vertices and paths
-                current_crossing_vertices = paths[i].crossing_vertices(paths[j])
-                if not current_crossing_vertices:
+                if current_crossing_vertices := paths[i].crossing_vertices(paths[j]):
                     path_is_vertex_disjoint = False
-                    crossing_vertices.append(current_crossing_vertices)
+                    crossing_vertices.append(list(current_crossing_vertices))
                     crossing_paths_idx_pairs.append((i, j))
 
             #  Check if path is
@@ -172,12 +168,12 @@ class EDPC(Scheduler):
         # the two phases such that at no crossing vertex both crossing path
         # fragments are placed in the same phase
         splits = {}
-        for i, j in itertools.product(range(len(crossing_vertices)), range(2)):
+        for i in range(len(crossing_vertices)):
             # Check it the crossing path is already marked to be split
-            if crossing_paths_idx_pairs[i][j] not in splits:
-                splits[crossing_paths_idx_pairs[i][j]] = [crossing_vertices[i]]
+            if crossing_paths_idx_pairs[i] not in splits:
+                splits[crossing_paths_idx_pairs[i]] = crossing_vertices[i]
             else:
-                splits[crossing_paths_idx_pairs[i][j]].append(crossing_vertices[i])
+                splits[crossing_paths_idx_pairs[i]].extend(crossing_vertices[i])
 
         # Split the crossing paths into the two phases
         for i in splits:
@@ -194,8 +190,9 @@ class EDPC(Scheduler):
         operator_graph: OperatorGraph,
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],
     ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[Path]]:
-        A = []
+        A: list[Path] = []
         covered_terminal_pairs = []
+        operator_graph._build_initial_operator_graph()
 
         # While not all terminal pairs have been connected
         while terminal_pairs != []:
@@ -217,7 +214,12 @@ class EDPC(Scheduler):
             operator_graph._remove_ancillas_in_path(p_star)
             A.append(p_star)
             covered_terminal_pairs.append(shortest_path_terminal_pair)
-            terminal_pairs.remove(shortest_path_terminal_pair)
+
+            # We have to remove all occurrences, the same terminal pair can't be
+            # run in parallel even when edge-disjoint paths connect them
+            terminal_pairs = [
+                pair for pair in terminal_pairs if pair != shortest_path_terminal_pair
+            ]
 
         return covered_terminal_pairs, A
 

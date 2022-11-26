@@ -102,7 +102,6 @@ class OperatorGraph:
 
             for i in self._operator_graph[current]:
                 if distances[i] == distances[current] - 1:
-
                     # Always make progress
                     assert current != i
                     current = i
