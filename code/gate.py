@@ -1,5 +1,6 @@
 from abc import ABC
 
+
 # Class modeling gates in the intermediate representation
 class Gate(ABC):
     pass

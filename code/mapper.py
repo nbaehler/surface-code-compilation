@@ -2,8 +2,8 @@ import itertools
 from abc import ABC, abstractmethod
 
 import numpy as np
+from helpers import flatten, is_data_qubit, unflatten
 
-from helpers import flatten, unflatten, is_data_qubit
 
 # Class that defines the interface of different mappers/mapping strategies for a
 # set qubits to a grid

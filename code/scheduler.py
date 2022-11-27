@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
-
 from helpers import unflatten
 from operator_graph import OperatorGraph
-from path import PaperKeyPath, Path, DirectKeyPath
+from path import DirectKeyPath, PaperKeyPath, Path
+
 
 # Class modelling a scheduler for compilation
 class Scheduler(ABC):
@@ -192,7 +192,7 @@ class EDPC(Scheduler):
     ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[Path]]:
         A: list[Path] = []
         covered_terminal_pairs = []
-        operator_graph._build_initial_operator_graph()
+        operator_graph._build_initial_operator_graph()  # TODO do it by only adding back the ancillas that were removed
 
         # While not all terminal pairs have been connected
         while terminal_pairs != []:

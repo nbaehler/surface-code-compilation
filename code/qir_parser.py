@@ -1,5 +1,6 @@
 from pyqir.evaluator import GateSet, NonadaptiveEvaluator
 
+
 # Logger for all the instructions that are important for us, so far only cnots
 class Logger(GateSet):
     def __init__(self) -> None:

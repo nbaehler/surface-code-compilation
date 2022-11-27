@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import itertools
-from enum import Enum
 from abc import abstractmethod
+from enum import Enum
 
 from helpers import is_data_qubit
+
 
 # Enum for the different types of paths for compilation
 class PathType(Enum):

@@ -2,6 +2,7 @@ from gate import Gate
 from helpers import is_data_qubit
 from path import Path
 
+
 # Class the compiles a scheduling into a intermediate representation using a
 # mapping as well
 class Compiler:
