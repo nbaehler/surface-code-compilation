@@ -5,6 +5,7 @@
 
 import os
 from pathlib import Path
+
 from pyqir.evaluator import GateLogger, NonadaptiveEvaluator
 
 path = Path(__file__).parent

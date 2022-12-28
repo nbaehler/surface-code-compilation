@@ -61,3 +61,14 @@ https://devblogs.microsoft.com/qsharp/q-holiday-calendar-2022/
  40% Intro, explain surface code, long range cnots, define the problem
  40% Concrete algo
  20% Demo
+
+--------------------------------------------------------------------------------
+Compile and output to Q sharp, test with sparse simulator
+
+https://devblogs.microsoft.com/qsharp/testing-large-quantum-algorithms-using-sparse-simulation/
+
+--------------------------------------------------------------------------------
+28.12.22
+- QIR alliance -> output to Q#, no easy way
+- How to test correctness? -> sparse simulator, any other way to output to Q#
+ -> new https://github.com/qir-alliance/qir-runner

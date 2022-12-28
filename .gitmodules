@@ -1,0 +1,3 @@
+[submodule "qir-runner"]
+	path = qir-runner
+	url = git@github.com:qir-alliance/qir-runner.git

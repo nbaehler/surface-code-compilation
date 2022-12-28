@@ -1,7 +1,7 @@
 import numpy as np
-
 from path import Path
 from vertex import Ancilla, Start, Stop, Vertex
+
 
 # Class that implements the graph structure used in the paper
 class OperatorGraph:

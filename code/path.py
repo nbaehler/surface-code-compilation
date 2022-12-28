@@ -13,6 +13,12 @@ class PathType(Enum):
     PHASE_2 = 2
 
 
+class PathVertex: # TODO how to split?
+    def __init__(self, location: tuple[int, int]) -> None:
+        super().__init__()
+        self._location = location
+
+
 # Class modelling a path containing all vertices in the operator graph
 class Path:
     def __init__(
@@ -66,6 +72,15 @@ class Path:
         e2 = {tuple(second[i : i + 2]) for i in range(len(second) - 1)}
 
         return not e1.intersection(e2)
+
+    def is_terminal_disjoint(self, other: Path) -> bool:
+        first = self._vertices
+        second = other._vertices
+
+        return first[0] != second[0] and first[-1] != second[-1]
+
+    def extend_to_path(self) -> Path:  # TODO needed?
+        return self
 
     # Split the path into several paths at the given vertices
     def split(  # TODO does this guarantee that the split paths are disjoint? Iterate over all crossing, label in both directions accordingly, ig a violation occurs we have a problem
@@ -175,10 +190,16 @@ class DirectKeyPath(KeyPath):
             current_r += 1
         self._vertices.append((current_r, current_c))
 
+        if (start_r, start_c) == (
+            stop_r,
+            stop_c,
+        ):  # TODO Make also spaced? Produces better paths
+            return
+
         # Horizontal steps
         if current_c > stop_c:
             current_c -= current_c - (stop_c + 1)
-        else:
+        elif current_c < stop_c:
             current_c += (stop_c - 1) - current_c
         self._vertices.append((current_r, current_c))
 

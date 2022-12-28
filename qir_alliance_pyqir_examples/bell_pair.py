@@ -4,6 +4,7 @@
 # Licensed under the MIT License.
 
 import os
+
 from pyqir.generator import BasicQisBuilder, SimpleModule
 
 # Create the module with two qubits and two results.

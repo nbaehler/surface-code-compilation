@@ -9,8 +9,9 @@ from scheduler import EDPC, Sequential
 
 
 def main():
-    # Read QIR file generated using the QIR-Alliance generator
+    # Generated circuit using the QIR-Alliance generator
     in_circ, grid_dims = input_circuit()
+    # in_circ, grid_dims = input_circuit2()
     in_qir = in_circ.ir()
 
     # Write temporary llvm file so that the parser can read it
@@ -22,14 +23,10 @@ def main():
         cnots = parse_qir(f.name)
 
     # Select strategies
-
-    # mapping_strategy = Identity
-    # mapping_strategy = Renaming
-    # mapping_strategy = PaperIdentity
-    mapping_strategy = PaperRenaming
-
-    # scheduling_strategy = Sequential
-    scheduling_strategy = EDPC
+    # mapping_strategy, scheduling_strategy = Identity, Sequential
+    # mapping_strategy, scheduling_strategy = Renaming, Sequential
+    mapping_strategy, scheduling_strategy = PaperIdentity, EDPC
+    # mapping_strategy, scheduling_strategy = PaperRenaming, EDPC
 
     # Map the qubits according to strategy
     (n_qubits, mapping, grid_dims) = mapping_strategy(
@@ -46,7 +43,7 @@ def main():
         mapping, scheduling
     ).compile()  # TODO do I need those abstract classes?
 
-    print("\nInfos:")
+    print("Infos:")
     print(f"Number of qubits used: {n_qubits}")
     print(f"Mapping of qubits: {mapping}")
 

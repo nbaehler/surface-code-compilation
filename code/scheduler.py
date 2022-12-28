@@ -39,26 +39,18 @@ class Sequential(Scheduler):
         ]
 
 
-# Scheduler that is based in the paper
+# Scheduler that is based on the paper
 class EDPC(Scheduler):
     def schedule(self):
         # Compute operator EDP sets
-        operator_edp_sets = self.__build_operator_edp_sets()
-
         # First approach, using the paper's novel algorithm
-        q1 = []
-        for operator_edp_set in operator_edp_sets:
-            p1, p2 = self.__edp_subroutine(operator_edp_set)
-
-            q1.append(p1)
-
-            # Check if two phases are needed
-            if p2:
-                q1.append(p2)
+        q1 = self.__build_operator_edp_sets()
 
         # Build operator graph
         operator_graph = OperatorGraph(self._grid_dims, self._cnots)
-        terminal_pairs = operator_graph._cnots.copy()  # TODO copy needed?
+        operator_graph._build_initial_operator_graph()
+
+        terminal_pairs = self._cnots.copy()  # TODO copy needed?
 
         # Second approach, using the greedy algorithm
         q2 = []
@@ -78,8 +70,21 @@ class EDPC(Scheduler):
 
             q2.append(p_star)
 
-        # Pick the shorter scheduling of both approaches
-        return q1 if len(q1) < len(q2) else q2
+        # Pick the shorter EDP operator set of both approaches
+        operator_edp_sets = q1 if len(q1) < len(q2) else q2
+
+        # Split operator EDP sets into operator VDP sets
+        res = []
+        for operator_edp_set in operator_edp_sets:
+            p1, p2 = self.__edp_subroutine(operator_edp_set)
+
+            res.append(p1)
+
+            # Check if two phases are needed
+            if p2:
+                res.append(p2)
+
+        return res
 
     # Build edge disjoint operator sets
     def __build_operator_edp_sets(
@@ -95,15 +100,17 @@ class EDPC(Scheduler):
             added = False
 
             # Check if the current path is edge disjoint with all of the paths
-            # of any of existing operator EDP sets
+            # of any of existing operator EDP sets and that no terminals are shared
             for operator_edp_set in operator_edp_sets:
-                share_edges = any(
+                conflict = any(
                     not current_path.is_edge_disjoint(set_path)
+                    or not current_path.is_terminal_disjoint(set_path)
                     for set_path in operator_edp_set
                 )
 
-                # Is edge disjoint with all of the paths of the current operator set
-                if not share_edges:
+                # Is edge disjoint with all of the paths of the current operator
+                # set and does not share any terminals
+                if not conflict:
                     operator_edp_set.append(current_path)
                     added = True
                     break
@@ -124,31 +131,27 @@ class EDPC(Scheduler):
 
         # For each path pair check if they are vertex disjoint
         vertex_disjoint_path_idx = []
-        crossing_vertices = []
-        crossing_paths_idx_pairs = []
+        crossing_vertices = {}
         for i in range(len(paths)):
             path_is_vertex_disjoint = True
             for j in range(i + 1, len(paths)):
                 if current_crossing_vertices := paths[i].crossing_vertices(paths[j]):
                     path_is_vertex_disjoint = False
-                    crossing_vertices.append(list(current_crossing_vertices))
-                    crossing_paths_idx_pairs.append((i, j))
 
-            #  Check if path is
+                    for crossing_vertex in current_crossing_vertices:
+                        assert crossing_vertex not in crossing_vertices
+                        crossing_vertices[crossing_vertex] = (i, j)
+
+            #  Check if path is vertex disjoint with all other paths
             if path_is_vertex_disjoint:
                 vertex_disjoint_path_idx.append(i)
 
         return (
             # When the operator EDP set is not vertex disjoint, fragment it into
             # two operator VDP sets
-            self.__fragment_edp_set(
-                paths,
-                vertex_disjoint_path_idx,
-                crossing_vertices,
-                crossing_paths_idx_pairs,
-            )
-            if crossing_paths_idx_pairs
-            # Otherwise return the EDP set as is, the empty second phase will be discarded
+            self.__fragment_edp_set(paths, vertex_disjoint_path_idx, crossing_vertices)
+            if crossing_vertices != {}
+            # Otherwise return the EDP set as is (because it's VDP as well), the empty second phase will be discarded
             else (paths, [])
         )
 
@@ -158,8 +161,7 @@ class EDPC(Scheduler):
         self,
         paths: list[Path],
         vertex_disjoint_path_idx: list[int],
-        crossing_vertices: list[tuple[int, int]],
-        crossing_paths_idx_pairs: list[tuple[int, int]],
+        crossing_vertices: dict[tuple[int, int], tuple[int, int]],
     ) -> tuple[list[Path], list[Path]]:
         # Assign all vertex disjoint paths to the first phase
         p1, p2 = [paths[i] for i in vertex_disjoint_path_idx], []
@@ -167,19 +169,24 @@ class EDPC(Scheduler):
         # Go over all the crossing vertices and split the crossing paths into
         # the two phases such that at no crossing vertex both crossing path
         # fragments are placed in the same phase
-        splits = {}
-        for i in range(len(crossing_vertices)):
-            # Check it the crossing path is already marked to be split
-            if crossing_paths_idx_pairs[i] not in splits:
-                splits[crossing_paths_idx_pairs[i]] = crossing_vertices[i]
-            else:
-                splits[crossing_paths_idx_pairs[i]].extend(crossing_vertices[i])
+        for crossing_vertex in crossing_vertices:
+            to_split = crossing_vertices[crossing_vertex][0]
+
+            # Split the crossing paths into the two phases
+            for path_idx in crossing_paths_idx:
+                first, second = paths[path_idx].split(crossing_vertex)
+                p1.extend(first)
+                p2.extend(second)
 
         # Split the crossing paths into the two phases
-        for i in splits:
-            first, second = paths[i].split(splits[i])
-            p1.extend(first)
-            p2.extend(second)
+        # print(splits)  # TODO remove prints, splitting is not working
+        # for crossing_paths_idx in splits:
+        #     print(crossing_paths_idx)
+        #     for path_idx in crossing_paths_idx:
+        #         print(path_idx)
+        #         first, second = paths[path_idx].split(splits[crossing_paths_idx])
+        #         p1.extend(first)
+        #         p2.extend(second)
 
         return p1, p2
 
@@ -191,18 +198,30 @@ class EDPC(Scheduler):
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],
     ) -> tuple[list[tuple[tuple[int, int], tuple[int, int]]], list[Path]]:
         A: list[Path] = []
+        # Remove duplicates, terminals can't be present twice (not just as pairs)
+        unique_terminal_pairs = []
+        used = set()
+        for pair in terminal_pairs:
+            if pair[0] not in used and pair[1] not in used:
+                unique_terminal_pairs.append(pair)
+                used.add(pair[0])
+                used.add(pair[1])
+
         covered_terminal_pairs = []
         operator_graph._build_initial_operator_graph()  # TODO do it by only adding back the ancillas that were removed
+        # temp = (
+        #     operator_graph.copy()
+        # )  # TODO use copy maybe
 
         # While not all terminal pairs have been connected
-        while terminal_pairs != []:
+        while unique_terminal_pairs != []:
             # Compute the shortest path between any terminal pair possible in
             # the operator graph
             (
                 shortest_path_terminal_pair,
                 p_star,
             ) = self.__compute_minimal_length_shortest_path_between_terminal_pairs(
-                operator_graph, terminal_pairs
+                operator_graph, unique_terminal_pairs
             )
 
             # If no such path exists, return the current set of paths
@@ -215,11 +234,8 @@ class EDPC(Scheduler):
             A.append(p_star)
             covered_terminal_pairs.append(shortest_path_terminal_pair)
 
-            # We have to remove all occurrences, the same terminal pair can't be
-            # run in parallel even when edge-disjoint paths connect them
-            terminal_pairs = [
-                pair for pair in terminal_pairs if pair != shortest_path_terminal_pair
-            ]
+            # Remove the covered terminal pair from the list of terminal pairs
+            unique_terminal_pairs.remove(shortest_path_terminal_pair)
 
         return covered_terminal_pairs, A
 

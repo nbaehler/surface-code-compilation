@@ -3,9 +3,8 @@ from pyqir.generator import BasicQisBuilder, SimpleModule
 
 
 def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
-    # Fix the grid dimensions and select strategies
+    # Fix the grid dimensions and hence number of qubits
     grid_dims = (6, 6)
-
     n_qubits = int(np.prod(grid_dims))
 
     # Create the module
@@ -13,13 +12,21 @@ def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     qis = BasicQisBuilder(in_circ.builder)
 
     # Add instructions to the module
-    qis.h(in_circ.qubits[0])
+    # qis.cx(in_circ.qubits[0], in_circ.qubits[1])
+    # qis.cx(in_circ.qubits[2], in_circ.qubits[3])
+    # qis.cx(in_circ.qubits[0], in_circ.qubits[1])
 
-    qis.cx(in_circ.qubits[0], in_circ.qubits[1])
-    qis.cx(in_circ.qubits[2], in_circ.qubits[3])
-    qis.cx(in_circ.qubits[0], in_circ.qubits[1])
+    # qis.cx(in_circ.qubits[6], in_circ.qubits[8])
+    # qis.cx(in_circ.qubits[16], in_circ.qubits[18])
+    # qis.cx(in_circ.qubits[6], in_circ.qubits[8])
 
-    qis.mz(in_circ.qubits[0], in_circ.results[0])
-    qis.mz(in_circ.qubits[1], in_circ.results[1])
+    # qis.cx(in_circ.qubits[0], in_circ.qubits[1])
+    # qis.cx(in_circ.qubits[2], in_circ.qubits[3])
+    # qis.cx(
+    #     in_circ.qubits[0], in_circ.qubits[3]
+    # )
+
+    qis.cx(in_circ.qubits[6], in_circ.qubits[18])  # TODO error
+    qis.cx(in_circ.qubits[16], in_circ.qubits[8])
 
     return in_circ, grid_dims
