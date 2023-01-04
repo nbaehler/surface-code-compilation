@@ -13,12 +13,6 @@ class PathType(Enum):
     PHASE_2 = 2
 
 
-class PathVertex: # TODO how to split?
-    def __init__(self, location: tuple[int, int]) -> None:
-        super().__init__()
-        self._location = location
-
-
 # Class modelling a path containing all vertices in the operator graph
 class Path:
     def __init__(
@@ -50,6 +44,10 @@ class Path:
     def __str__(self) -> str:
         return str(self._vertices)
 
+    # Iterator
+    def __iter__(self):
+        return VertexIterator(self)
+
     # Append a vertex to the path
     def append_vertex(self, vertex: tuple[int, int]) -> None:
         self._vertices.append(vertex)
@@ -79,35 +77,23 @@ class Path:
 
         return first[0] != second[0] and first[-1] != second[-1]
 
-    def extend_to_path(self) -> Path:  # TODO needed?
+    def extend_to_path(self) -> Path:
         return self
 
-    # Split the path into several paths at the given vertices
-    def split(  # TODO does this guarantee that the split paths are disjoint? Iterate over all crossing, label in both directions accordingly, ig a violation occurs we have a problem
-        self, split_vertices: list[tuple[int, int]]
-    ) -> tuple[list[Path], list[Path]]:
-        p1, p2 = [], []
 
-        indices = [self._vertices.index(v) for v in split_vertices]
-        indices.sort()
+# Iterator over the vertices of a path
+class VertexIterator:
+    def __init__(self, path: Path) -> None:
+        self._index = 0
+        self._path = path
 
-        phase = False
-        start = 0
-        for split_index in indices:
-            if not phase:
-                p1.append(Path(PathType.PHASE_1, self._vertices[start:split_index]))
-            else:
-                p2.append(Path(PathType.PHASE_2, self._vertices[start:split_index]))
+    def __next__(self) -> tuple[int, int]:
+        if self._index < len(self._path):
+            result = self._path[self._index]
+            self._index += 1
+            return result
 
-            start = split_index - 1
-            phase = not phase
-
-        if not phase:
-            p1.append(Path(PathType.PHASE_1, self._vertices[start:]))
-        else:
-            p2.append(Path(PathType.PHASE_2, self._vertices[start:]))
-
-        return p1, p2
+        raise StopIteration
 
 
 # Class for paths that are denoted using only key vertices on that path
@@ -193,7 +179,7 @@ class DirectKeyPath(KeyPath):
         if (start_r, start_c) == (
             stop_r,
             stop_c,
-        ):  # TODO Make also spaced? Produces better paths
+        ):
             return
 
         # Horizontal steps

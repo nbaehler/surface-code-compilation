@@ -14,6 +14,4 @@ def generate_qir(n_qubits: int, ir: list[list[Gate]]):
             pass
             # qis.cx(module.qubits[mapping[cnot[0]]], module.qubits[mapping[cnot[1]]])
 
-    return (
-        module.ir()
-    )  # TODO how can I get q sharp code? Only ir() and bitcode() are available
+    return module.ir()

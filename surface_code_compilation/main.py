@@ -28,36 +28,35 @@ def main():
     mapping_strategy, scheduling_strategy = PaperIdentity, EDPC
     # mapping_strategy, scheduling_strategy = PaperRenaming, EDPC
 
+    print("Infos:")
+
     # Map the qubits according to strategy
     (n_qubits, mapping, grid_dims) = mapping_strategy(
         grid_dims, cnots
     ).map()  # TODO do I need those abstract classes?
+
+    print(f"Number of qubits used: {n_qubits}")
+    print(f"Mapping of qubits: {mapping}")
 
     # Schedule the CNOTs according to strategy
     scheduling = scheduling_strategy(
         grid_dims, cnots, mapping
     ).schedule()  # TODO do I need those abstract classes?
 
-    # Compile the scheduled CNOTs into a intermediate representation
-    ir = Compiler(
-        mapping, scheduling
-    ).compile()  # TODO do I need those abstract classes?
-
-    print("Infos:")
-    print(f"Number of qubits used: {n_qubits}")
-    print(f"Mapping of qubits: {mapping}")
-
     scheduling_str = ",\n".join(
         [", ".join([str(path) for path in phase]) for phase in scheduling]
     )
     print(f"Scheduling:\n[{scheduling_str}]\n")
 
+    # Compile the scheduled CNOTs into a intermediate representation
+    ir = Compiler(
+        mapping, scheduling
+    ).compile()  # TODO do I need those abstract classes?
+
     # Generate QIR from intermediate representation
     res_qir = generate_qir(n_qubits, ir)
 
     print(f"The resulting QIR code:\n{res_qir}")
-
-    # TODO save qir as file and run it with the QIR-Alliance simulator
 
 
 if __name__ == "__main__":

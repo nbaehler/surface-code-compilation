@@ -15,7 +15,7 @@ Questions:
 - When do we meet generally?
 - Opportunities at Microsoft?
 
-TODO:
+Do:
 - Debug moves (and swap)
 - Fix the return type (Result, Result[]) of the Bell measurement
 

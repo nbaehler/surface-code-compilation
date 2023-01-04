@@ -26,7 +26,7 @@ def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     #     in_circ.qubits[0], in_circ.qubits[3]
     # )
 
-    qis.cx(in_circ.qubits[6], in_circ.qubits[18])  # TODO error
+    qis.cx(in_circ.qubits[6], in_circ.qubits[18])
     qis.cx(in_circ.qubits[16], in_circ.qubits[8])
 
     return in_circ, grid_dims
