@@ -1,9 +1,15 @@
+import os
+import sys
+
+sys.path.insert(  # TODO check this
+    1, os.path.join(os.path.dirname(os.path.abspath(__file__)), "../qir-runner")
+)
+
 import tempfile
 
 from compiler import Compiler
 from input_circuit import input_circuit
 from mapper import Identity, PaperIdentity, PaperRenaming, Renaming
-from qir_generator import generate_qir
 from qir_parser import parse_qir
 from scheduler import EDPC, Sequential
 
@@ -11,7 +17,6 @@ from scheduler import EDPC, Sequential
 def main():
     # Generated circuit using the QIR-Alliance generator
     in_circ, grid_dims = input_circuit()
-    # in_circ, grid_dims = input_circuit2()
     in_qir = in_circ.ir()
 
     # Write temporary llvm file so that the parser can read it
@@ -48,15 +53,12 @@ def main():
     )
     print(f"Scheduling:\n[{scheduling_str}]\n")
 
-    # Compile the scheduled CNOTs into a intermediate representation
-    ir = Compiler(
-        mapping, scheduling
+    # Compile the scheduled CNOTs into QIR
+    qir = Compiler(
+        grid_dims, scheduling
     ).compile()  # TODO do I need those abstract classes?
 
-    # Generate QIR from intermediate representation
-    res_qir = generate_qir(n_qubits, ir)
-
-    print(f"The resulting QIR code:\n{res_qir}")
+    print(f"The resulting QIR code:\n{qir}")
 
 
 if __name__ == "__main__":

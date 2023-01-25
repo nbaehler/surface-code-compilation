@@ -1,5 +1,5 @@
 from gate import Gate
-from pyqir.generator import BasicQisBuilder, SimpleModule
+from pyqir import BasicQisBuilder, SimpleModule
 
 
 # Given the ir of the circuit, generate the corresponding qir

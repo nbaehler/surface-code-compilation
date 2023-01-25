@@ -77,8 +77,14 @@ class Path:
 
         return first[0] != second[0] and first[-1] != second[-1]
 
-    def extend_to_path(self) -> Path:
+    def extend_to_path(self) -> Path:  # TODO needed? Remove, this is empty!
         return self
+
+    def get_type(self) -> PathType:
+        return self._type
+
+    def interior(self) -> Path:
+        return Path(self._type, self._vertices[1:-1])
 
 
 # Iterator over the vertices of a path

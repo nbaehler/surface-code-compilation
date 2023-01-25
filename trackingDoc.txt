@@ -72,3 +72,8 @@ https://devblogs.microsoft.com/qsharp/testing-large-quantum-algorithms-using-spa
 - QIR alliance -> output to Q#, no easy way
 - How to test correctness? -> sparse simulator, any other way to output to Q#
  -> new https://github.com/qir-alliance/qir-runner
+
+
+
+ --------------------------------------------------------------------------------
+All are aligned from bottom to top, except first notion at page 9

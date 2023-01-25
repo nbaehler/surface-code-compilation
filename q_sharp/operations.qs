@@ -234,4 +234,30 @@ namespace Operations {
 
         Message($"Got tl={rtl}, br={rbr}");
     }
+
+    operation CustomJointZZ(tl : Bool, br : Bool): Unit {
+        use qtl = Qubit();
+        use qbr = Qubit();
+
+        PrepareZ(qtl);
+        PrepareZ(qbr);
+
+        use qtrhlp = Qubit();
+        use qblhlp = Qubit();
+
+        if tl {
+            X(qtl);
+        }
+
+        if br {
+            X(qbr);
+        }
+
+        DiagonalSwap(qtl, qtrhlp, qblhlp, qbr);
+
+        let rtl = M(qtl);
+        let rbr = M(qbr);
+
+        Message($"Got tl={rtl}, br={rbr}");
+    }
 }

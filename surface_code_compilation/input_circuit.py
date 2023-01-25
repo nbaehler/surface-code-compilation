@@ -1,5 +1,5 @@
 import numpy as np
-from pyqir.generator import BasicQisBuilder, SimpleModule
+from pyqir import BasicQisBuilder, SimpleModule
 
 
 def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
@@ -8,25 +8,25 @@ def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     n_qubits = int(np.prod(grid_dims))
 
     # Create the module
-    in_circ = SimpleModule("input_circuit", num_qubits=n_qubits, num_results=n_qubits)
-    qis = BasicQisBuilder(in_circ.builder)
+    mod = SimpleModule("input_circuit", num_qubits=n_qubits, num_results=n_qubits)
+    qis = BasicQisBuilder(mod.builder)
 
     # Add instructions to the module
-    # qis.cx(in_circ.qubits[0], in_circ.qubits[1])
-    # qis.cx(in_circ.qubits[2], in_circ.qubits[3])
-    # qis.cx(in_circ.qubits[0], in_circ.qubits[1])
+    # qis.cx(mod.qubits[0], mod.qubits[1])
+    # qis.cx(mod.qubits[2], mod.qubits[3])
+    # qis.cx(mod.qubits[0], mod.qubits[1])
 
-    # qis.cx(in_circ.qubits[6], in_circ.qubits[8])
-    # qis.cx(in_circ.qubits[16], in_circ.qubits[18])
-    # qis.cx(in_circ.qubits[6], in_circ.qubits[8])
+    # qis.cx(mod.qubits[6], mod.qubits[8])
+    # qis.cx(mod.qubits[16], mod.qubits[18])
+    # qis.cx(mod.qubits[6], mod.qubits[8])
 
-    # qis.cx(in_circ.qubits[0], in_circ.qubits[1])
-    # qis.cx(in_circ.qubits[2], in_circ.qubits[3])
+    # qis.cx(mod.qubits[0], mod.qubits[1])
+    # qis.cx(mod.qubits[2], mod.qubits[3])
     # qis.cx(
-    #     in_circ.qubits[0], in_circ.qubits[3]
+    #     mod.qubits[0], mod.qubits[3]
     # )
 
-    qis.cx(in_circ.qubits[6], in_circ.qubits[18])
-    qis.cx(in_circ.qubits[16], in_circ.qubits[8])
+    qis.cx(mod.qubits[6], mod.qubits[18])
+    qis.cx(mod.qubits[16], mod.qubits[8])
 
-    return in_circ, grid_dims
+    return mod, grid_dims

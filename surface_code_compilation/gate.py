@@ -1,14 +1,192 @@
 from abc import ABC
+from enum import Enum
+
+from pyqir import SimpleModule, BasicQisBuilder, Value
 
 
-# Class modeling gates in the intermediate representation
+class Orientation(Enum):
+    HORIZONTAL = 0
+    VERTICAL = 1
+
+
+# class modeling gates in the intermediate representation
 class Gate(ABC):
-    pass
-
-
-# CNOT gate in the intermediate representation
-class CNOT(Gate):  # TODO add all gates that I need
-    def __init__(self, control: int, target: int) -> None:
+    def __init__(self) -> None:
         super().__init__()
-        self._control = control
-        self._target = target
+
+
+class SingleQubitGate(Gate):
+    def __init__(self) -> None:
+        super().__init__()
+
+
+class DoubleQubitGate(Gate):
+    def __init__(
+        self,
+        q1: int,
+        q2: int,
+        orientation: Orientation = None,
+    ) -> None:
+        super().__init__()
+
+        if orientation is not None:
+            assert (
+                orientation == Orientation.HORIZONTAL
+                if q1 == q2 + 1
+                else Orientation.VERTICAL
+            )
+
+        self._orientation = (
+            Orientation.HORIZONTAL if q1 == q2 + 1 else Orientation.VERTICAL
+        )  # TODO: check if this is correct in all cases
+
+
+class Z(SingleQubitGate):
+    def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
+        super().__init__()
+
+        qis.z(mod.qubits[q])
+
+
+class X(SingleQubitGate):
+    def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
+        super().__init__()
+
+        qis.x(mod.qubits[q])
+
+
+class PrepareX(SingleQubitGate):
+    def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
+        super().__init__()
+
+        qis.reset(mod.qubits[q])
+        qis.h(mod.qubits[q])
+
+
+class PrepareZ(SingleQubitGate):
+    def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
+        super().__init__()
+
+        qis.reset(mod.qubits[q])
+
+
+class PrepareBB(DoubleQubitGate):
+    def __init__(
+        self, mod: SimpleModule, qis: BasicQisBuilder, q1: int, q2: int
+    ) -> None:
+        super().__init__(q1, q2)
+
+        if self._orientation == Orientation.HORIZONTAL:
+            PrepareZ(mod, qis, q1)
+            PrepareZ(mod, qis, q2)
+
+            res = mod.results[q1]
+            MeasureXX(mod, qis, q1, q2, res)
+
+            qis.if_result(res, lambda: Z(mod, qis, q2))
+
+        else:  # Vertical
+            PrepareX(mod, qis, q1)
+            PrepareX(mod, qis, q2)
+
+            res = mod.results[q1]
+            MeasureZZ(mod, qis, q1, q2, res)
+
+            qis.if_result(res, lambda: X(mod, qis, q2))
+
+
+class MeasureZ(SingleQubitGate):
+    def __init__(
+        self, mod: SimpleModule, qis: BasicQisBuilder, q: int, res: Value
+    ) -> None:
+        super().__init__()
+
+        qis.mz(mod.qubits[q], res)
+
+
+class MeasureX(SingleQubitGate):
+    def __init__(
+        self, mod: SimpleModule, qis: BasicQisBuilder, q: int, res: Value
+    ) -> None:
+        super().__init__()
+
+        qis.h(mod.qubits[q])
+        qis.mz(mod.qubits[q], res)
+
+
+class MeasureZZ(DoubleQubitGate):  # Vertical only
+    def __init__(
+        self, mod: SimpleModule, qis: BasicQisBuilder, q1: int, q2: int, res: Value
+    ) -> None:
+        super().__init__(q1, q2, Orientation.VERTICAL)
+
+        qis.mz(mod.qubits[q1], res)  # TODO: wrong
+
+
+class MeasureXX(DoubleQubitGate):  # Horizontal only
+    def __init__(
+        self, mod: SimpleModule, qis: BasicQisBuilder, q1: int, q2: int, res: Value
+    ) -> None:
+        super().__init__(q1, q2, Orientation.HORIZONTAL)
+
+        qis.h(mod.qubits[q1])
+        qis.mz(mod.qubits[q1], res)  # TODO: wrong
+
+
+class MeasureBB(DoubleQubitGate):
+    def __init__(
+        self,
+        mod: SimpleModule,
+        qis: BasicQisBuilder,
+        q1: int,
+        q2: int,
+        res1: Value,
+        res2: Value,
+    ) -> None:
+        super().__init__(q1, q2)
+
+        if self._orientation == Orientation.HORIZONTAL:
+            MeasureXX(mod, qis, q1, q2, res1)
+
+            MeasureZ(mod, qis, q1, res2)  # TODO: wrong, need 3 result
+            MeasureZ(mod, qis, q2, res2)
+
+            res2 = mod.builder.xor(res2, res2)
+
+        else:  # Vertical
+            MeasureZZ(mod, qis, q1, q2, res1)
+
+            MeasureX(mod, qis, q1, res2)  # TODO: wrong, need 3 result
+            MeasureX(mod, qis, q2, res2)
+
+            res2 = mod.builder.xor(res2, res2)
+
+
+class Move(DoubleQubitGate):
+    def __init__(
+        self, mod: SimpleModule, qis: BasicQisBuilder, frm: int, to: int
+    ) -> None:
+        super().__init__(frm, to)
+
+        if self._orientation == Orientation.HORIZONTAL:
+            PrepareZ(mod, qis, to)
+
+            x = mod.results[frm]
+            MeasureXX(mod, qis, frm, to, x)
+
+            z = mod.results[to]
+            MeasureZ(mod, qis, frm, z)
+
+            qis.if_result(x, lambda: Z(mod, qis, to))
+            qis.if_result(z, lambda: X(mod, qis, to))
+        else:  # Vertical
+            PrepareX(mod, qis, to)
+
+            z = mod.results[frm]
+            MeasureZZ(mod, qis, frm, to, z)
+
+            x = mod.results[to]
+            MeasureX(mod, qis, frm, x)
+
+            qis.if_result(z, lambda: X(mod, qis, to))
+            qis.if_result(x, lambda: Z(mod, qis, to))
