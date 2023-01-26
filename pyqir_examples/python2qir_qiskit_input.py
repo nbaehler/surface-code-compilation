@@ -2,7 +2,7 @@
 
 # Bernstein-Vazirani algorithm on 6 qubits with Qiskit
 
-from qiskit import Aer, execute, QuantumCircuit
+from qiskit import Aer, QuantumCircuit, execute
 
 qc = QuantumCircuit(7, 6)
 

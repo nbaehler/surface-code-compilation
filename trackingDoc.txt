@@ -75,5 +75,19 @@ https://devblogs.microsoft.com/qsharp/testing-large-quantum-algorithms-using-spa
 
 
 
- --------------------------------------------------------------------------------
-All are aligned from bottom to top, except first notion at page 9
+--------------------------------------------------------------------------------
+PyQIR:
+- xor between results
+- ancilla qubits
+- temp Value other than Result -> ancilla result
+
+JointXX & -ZZ:
+- No native support for joint measurement
+
+QIR-runner:
+- How can I use it to check correctness easily
+
+Jupyter notebook:
+- Template
+- length
+- topics

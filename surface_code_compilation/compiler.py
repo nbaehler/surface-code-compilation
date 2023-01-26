@@ -54,13 +54,13 @@ class Compiler:
         q1 = flatten(*path[0], self._grid_dims)
         q2 = flatten(*path[1], self._grid_dims)
         b = self._mod.results[q1]
-        MeasureZZ(self._mod, self._qis, q1, q2, b)
+        MeasureZZ(self._mod, self._qis, q1, q2, 0, b)  # TODO: ancilla
 
         # Measure XX => a
         q1 = flatten(*path[-2], self._grid_dims)
         q2 = flatten(*path[-1], self._grid_dims)
         a = self._mod.results[q2]
-        MeasureXX(self._mod, self._qis, q1, q2, a)
+        MeasureXX(self._mod, self._qis, q1, q2, 0, a)  # TODO: ancilla
 
         # Measure X => c
         q = flatten(*path[1], self._grid_dims)
@@ -216,7 +216,7 @@ class Compiler:
         q1 = flatten(*path[0], self._grid_dims)
         q2 = flatten(*path[1], self._grid_dims)
         z_joint = self._mod.results[q1]
-        MeasureZZ(self._mod, self._qis, q1, q2, z_joint)
+        MeasureZZ(self._mod, self._qis, q1, q2, 0, z_joint)  # TODO: ancilla
 
         # Prepare BB at end
         q1 = flatten(*path[-2], self._grid_dims)
@@ -251,7 +251,7 @@ class Compiler:
         q1 = flatten(*path[-2], self._grid_dims)
         q2 = flatten(*path[-1], self._grid_dims)
         x_joint = self._mod.results[q2]
-        MeasureXX(self._mod, self._qis, q1, q2, x_joint)
+        MeasureXX(self._mod, self._qis, q1, q2, 0, x_joint)  # TODO: ancilla
 
         # Prepare BB at start
         q1 = flatten(*path[0], self._grid_dims)
@@ -295,7 +295,7 @@ class Compiler:
         q1 = flatten(*path[0], self._grid_dims)
         q2 = flatten(*path[1], self._grid_dims)
         z_joint = self._mod.results[q1]
-        MeasureZZ(self._mod, self._qis, q1, q2, z_joint)
+        MeasureZZ(self._mod, self._qis, q1, q2, 0, z_joint)  # TODO: ancilla
 
         # Measure X
         q = flatten(*path[1], self._grid_dims)
@@ -330,7 +330,7 @@ class Compiler:
         q1 = flatten(*path[-2], self._grid_dims)
         q2 = flatten(*path[-1], self._grid_dims)
         x_joint = self._mod.results[q1]
-        MeasureXX(self._mod, self._qis, q1, q2, x_joint)
+        MeasureXX(self._mod, self._qis, q1, q2, 0, x_joint)  # TODO: ancilla
 
         # Measure Z
         q = flatten(*path[-2], self._grid_dims)

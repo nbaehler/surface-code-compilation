@@ -60,8 +60,8 @@ python bernstein_vazirani.py
 This examples consists of a [single file](bell_pair.py), and does not require
 any additional installation besides PyQIR itself. Please be aware that the PyQIR
 API is not intended to directly express quantum applications; its purpose is to
-be easily usable for *compiler and frontend developers* rather than *application
-developers*.
+be easily usable for _compiler and frontend developers_ rather than _application
+developers_.
 
 The example can be run using python, with the generated QIR being written to a
 text file:

@@ -44,7 +44,18 @@ class EDPC(Scheduler):
     def schedule(self):
         # Compute operator EDP sets
         # First approach, using the paper's novel algorithm
-        q1 = self.__build_operator_edp_sets()
+        operator_edp_sets = self.__build_operator_edp_sets()
+
+        # Split operator EDP sets into operator VDP sets
+        q1 = []
+        for operator_edp_set in operator_edp_sets:
+            p1, p2 = self.__edp_subroutine(operator_edp_set)
+
+            q1.append(p1)
+
+            # Check if two phases are needed
+            if p2:
+                q1.append(p2)
 
         # Build operator graph
         operator_graph = OperatorGraph(self._grid_dims, self._cnots)
@@ -57,7 +68,7 @@ class EDPC(Scheduler):
         while terminal_pairs:
             # Compute as many minimal length shortest path between terminal
             # pairs as possible that do not intersect
-            covered_terminal_pairs, p_star = self.__greedy_edp(
+            covered_terminal_pairs, p_star = self.__greedy_vdp(
                 operator_graph, terminal_pairs
             )
 
@@ -70,21 +81,9 @@ class EDPC(Scheduler):
 
             q2.append(p_star)
 
-        # Pick the shorter EDP operator set of both approaches
-        operator_edp_sets = q1 if len(q1) < len(q2) else q2
-
-        # Split operator EDP sets into operator VDP sets
-        res = []
-        for operator_edp_set in operator_edp_sets:
-            p1, p2 = self.__edp_subroutine(operator_edp_set)
-
-            res.append(p1)
-
-            # Check if two phases are needed
-            if p2:
-                res.append(p2)
-
-        return res
+        # Pick the shorter scheduling of both approaches
+        # return q1 if len(q1) <= len(q2) else q2 # TODO uncomment
+        return q1
 
     # Build edge disjoint operator sets
     def __build_operator_edp_sets(
@@ -181,6 +180,7 @@ class EDPC(Scheduler):
             for j in range(1, len(phase)):
                 if phase[j] != current_phase:
                     if current_phase == 1:
+                        current_vertices.append(current_path[j])
                         p1.append(Path(PathType.PHASE_1, current_vertices))
                     elif current_phase == 2:
                         p2.append(Path(PathType.PHASE_2, current_vertices))
@@ -199,7 +199,7 @@ class EDPC(Scheduler):
 
     # Greedily compute the set of shortest paths connecting the given terminal
     # pairs that are vertex disjoint
-    def __greedy_edp(
+    def __greedy_vdp(
         self,
         operator_graph: OperatorGraph,
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],

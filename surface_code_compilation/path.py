@@ -52,7 +52,7 @@ class Path:
     def append_vertex(self, vertex: tuple[int, int]) -> None:
         self._vertices.append(vertex)
 
-    # Reverse the path
+    # Reverse the path # TODO needed? Remove
     def reverse(self) -> None:
         self._vertices.reverse()
 
@@ -92,6 +92,9 @@ class VertexIterator:
     def __init__(self, path: Path) -> None:
         self._index = 0
         self._path = path
+
+    def __iter__(self):
+        return self
 
     def __next__(self) -> tuple[int, int]:
         if self._index < len(self._path):

@@ -3,6 +3,7 @@ from input_circuit import input_circuit
 from mapper import Identity, PaperIdentity, PaperRenaming, Renaming
 from qir_parser import parse_qir
 from scheduler import EDPC, Sequential
+from visualizer import Visualizer
 
 
 def main():
@@ -37,6 +38,9 @@ def main():
         [", ".join([str(path) for path in phase]) for phase in scheduling]
     )
     print(f"Scheduling:\n[{scheduling_str}]\n")
+
+    # Visualize the scheduling
+    Visualizer(grid_dims, scheduling).visualize()
 
     # Compile the scheduled CNOTs into QIR
     out_qir = Compiler(grid_dims, scheduling).compile()

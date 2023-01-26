@@ -5,11 +5,10 @@ import pyqir
 from pyqir import (
     BasicBlock,
     Builder,
-    Context,
+    Context,  # ModuleFlagBehavior,
     Function,
     Linkage,
     Module,
-    # ModuleFlagBehavior,
 )
 
 context = Context()

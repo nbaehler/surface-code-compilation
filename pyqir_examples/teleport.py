@@ -1,8 +1,9 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from pyqir import BasicQisBuilder, SimpleModule, Value
 from typing import List
+
+from pyqir import BasicQisBuilder, SimpleModule, Value
 
 
 def teleport(qis: BasicQisBuilder, qubits: List[Value], results: List[Value]) -> None:

@@ -109,6 +109,6 @@ class OperatorGraph:
 
         path.append_vertex(start)
 
-        # Reverse the path
-        path.reverse()
+        # # Reverse the path
+        # path.reverse() # TODO: is this necessary?
         return path
