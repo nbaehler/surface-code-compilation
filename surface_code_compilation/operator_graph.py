@@ -55,11 +55,15 @@ class OperatorGraph:
     # inside the given path
     def _remove_ancillas_in_path(self, path: Path) -> None:
         for i in range(1, len(path) - 2):
-            vertex_position = path[i]
-            next_vertex_position = path[i + 1]
+            current_position = path[i]
 
-            self._operator_graph[vertex_position].remove_neighbor(next_vertex_position)
-            self._operator_graph[next_vertex_position].remove_neighbor(vertex_position)
+            for neighbor_position in self._operator_graph[current_position]:
+                self._operator_graph[neighbor_position].remove_neighbor(
+                    current_position
+                )
+                self._operator_graph[current_position].remove_neighbor(
+                    neighbor_position
+                )
 
     # Compute the the shortest path between start and stop vertices in the
     # operator graph
@@ -109,6 +113,6 @@ class OperatorGraph:
 
         path.append_vertex(start)
 
-        # # Reverse the path
-        # path.reverse() # TODO: is this necessary?
+        # Reverse the path
+        path.reverse()
         return path

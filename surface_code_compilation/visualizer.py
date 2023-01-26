@@ -17,7 +17,7 @@ class Visualizer:
 
     # https://stackoverflow.com/a/10195347
     def visualize(self):
-        fig, ax = plt.subplots(1, len(self._scheduling))
+        _, ax = plt.subplots(1, len(self._scheduling))
 
         if len(self._scheduling) == 1:
             ax = [ax]
@@ -96,5 +96,3 @@ class Visualizer:
             ax[a].set_aspect("equal")
 
         plt.show()
-
-        return fig

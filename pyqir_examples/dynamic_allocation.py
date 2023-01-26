@@ -2,14 +2,8 @@
 # Licensed under the MIT License.
 
 import pyqir
-from pyqir import (
-    BasicBlock,
-    Builder,
-    Context,  # ModuleFlagBehavior,
-    Function,
-    Linkage,
-    Module,
-)
+from pyqir import Context  # ModuleFlagBehavior,
+from pyqir import BasicBlock, Builder, Function, Linkage, Module
 
 context = Context()
 mod = Module(

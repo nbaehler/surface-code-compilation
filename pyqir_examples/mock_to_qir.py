@@ -3,12 +3,13 @@
 # Copyright (c) Microsoft Corporation.
 # Licensed under the MIT License.
 
-from antlr4 import CommonTokenStream, FileStream, ParseTreeWalker
 from argparse import ArgumentParser
-from mock_language.MockLanguageLexer import MockLanguageLexer
-from mock_language.MockLanguageParser import MockLanguageParser
-from mock_language.MockLanguageListener import MockLanguageListener
 from pathlib import Path
+
+from antlr4 import CommonTokenStream, FileStream, ParseTreeWalker
+from mock_language.MockLanguageLexer import MockLanguageLexer
+from mock_language.MockLanguageListener import MockLanguageListener
+from mock_language.MockLanguageParser import MockLanguageParser
 from pyqir import BasicQisBuilder, SimpleModule, Value
 
 

@@ -19,16 +19,21 @@ dependencies:
   - backcall=0.2.0=pyhd3eb1b0_0
   - beautifulsoup4=4.11.1=py310h06a4308_0
   - black=22.6.0=py310h06a4308_0
+  - blas=1.0=mkl
   - bleach=4.1.0=pyhd3eb1b0_0
   - blinker=1.4=py310h06a4308_0
+  - brotli=1.0.9=h5eee18b_7
+  - brotli-bin=1.0.9=h5eee18b_7
   - brotlipy=0.7.0=py310h7f8727e_1002
   - bzip2=1.0.8=h7b6447c_0
-  - ca-certificates=2022.07.19=h06a4308_0
-  - certifi=2022.9.24=py310h06a4308_0
+  - ca-certificates=2023.01.10=h06a4308_0
+  - certifi=2022.12.7=py310h06a4308_0
   - cffi=1.15.1=py310h74dc2b5_0
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - click=8.0.4=py310h06a4308_0
+  - contourpy=1.0.5=py310hdb19cb5_0
   - cryptography=37.0.1=py310h9ce1e76_0
+  - cycler=0.11.0=pyhd3eb1b0_0
   - dbus=1.13.18=hb2f20db_0
   - debugpy=1.5.1=py310h295c915_0
   - decorator=5.1.1=pyhd3eb1b0_0
@@ -37,6 +42,7 @@ dependencies:
   - executing=0.8.3=pyhd3eb1b0_0
   - expat=2.4.9=h6a678d5_0
   - fontconfig=2.13.1=h6c09931_0
+  - fonttools=4.25.0=pyhd3eb1b0_0
   - freetype=2.11.0=h70c0345_0
   - giflib=5.2.1=h7b6447c_0
   - glib=2.69.1=h4ff587b_1
@@ -44,6 +50,7 @@ dependencies:
   - gstreamer=1.14.0=h28cd5cc_2
   - icu=58.2=he6710b0_3
   - idna=3.3=pyhd3eb1b0_0
+  - intel-openmp=2021.4.0=h06a4308_3561
   - ipykernel=6.15.2=py310h06a4308_0
   - ipython=8.4.0=py310h06a4308_0
   - ipython_genutils=0.2.0=pyhd3eb1b0_1
@@ -69,9 +76,14 @@ dependencies:
   - jupyterlab_pygments=0.1.2=py_0
   - jupyterlab_server=2.12.0=py310h06a4308_0
   - jupyterlab_widgets=1.0.0=pyhd3eb1b0_1
+  - kiwisolver=1.4.4=py310h6a678d5_0
   - krb5=1.19.2=hac12032_0
+  - lcms2=2.12=h3be6417_0
   - ld_impl_linux-64=2.38=h1181459_1
   - lerc=3.0=h295c915_0
+  - libbrotlicommon=1.0.9=h5eee18b_7
+  - libbrotlidec=1.0.9=h5eee18b_7
+  - libbrotlienc=1.0.9=h5eee18b_7
   - libclang=10.0.1=default_hb85057a_2
   - libdeflate=1.8=h7f8727e_5
   - libedit=3.1.20210910=h7f8727e_0
@@ -95,9 +107,16 @@ dependencies:
   - lxml=4.9.1=py310h1edc446_0
   - lz4-c=1.9.3=h295c915_1
   - markupsafe=2.1.1=py310h7f8727e_0
+  - matplotlib=3.6.2=py310h06a4308_0
+  - matplotlib-base=3.6.2=py310h945d387_0
   - matplotlib-inline=0.1.6=py310h06a4308_0
   - mistune=0.8.4=py310h7f8727e_1000
+  - mkl=2021.4.0=h06a4308_640
+  - mkl-service=2.4.0=py310h7f8727e_0
+  - mkl_fft=1.3.1=py310hd6ae3a3_0
+  - mkl_random=1.2.2=py310h00e6091_0
   - msrest=0.7.1=pyhd8ed1ab_0
+  - munkres=1.1.4=py_0
   - mypy_extensions=0.4.3=py310h06a4308_0
   - nbclassic=0.3.5=pyhd3eb1b0_0
   - nbclient=0.5.13=py310h06a4308_0
@@ -108,8 +127,9 @@ dependencies:
   - notebook=6.4.12=py310h06a4308_0
   - nspr=4.33=h295c915_0
   - nss=3.74=h0370c37_0
+  - numpy-base=1.23.5=py310h8e6c178_0
   - oauthlib=3.2.0=pyhd3eb1b0_1
-  - openssl=1.1.1q=h7f8727e_0
+  - openssl=1.1.1s=h7f8727e_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandocfilters=1.5.0=pyhd3eb1b0_0
   - parso=0.8.3=pyhd3eb1b0_0
@@ -117,6 +137,7 @@ dependencies:
   - pcre=8.45=h295c915_0
   - pexpect=4.8.0=pyhd3eb1b0_3
   - pickleshare=0.7.5=pyhd3eb1b0_1003
+  - pillow=9.2.0=py310hace64e9_1
   - platformdirs=2.5.2=py310h06a4308_0
   - ply=3.11=py310h06a4308_0
   - prometheus_client=0.14.1=py310h06a4308_0
@@ -181,7 +202,7 @@ dependencies:
       - aiofile==3.8.1
       - aiohttp==3.8.3
       - aiosignal==1.2.0
-      - antlr4-python3-runtime==4.10
+      - antlr4-python3-runtime==4.11.1
       - async-timeout==4.0.2
       - azure-identity==1.11.0
       - azure-quantum==0.26.232864

@@ -82,8 +82,9 @@ class EDPC(Scheduler):
             q2.append(p_star)
 
         # Pick the shorter scheduling of both approaches
-        # return q1 if len(q1) <= len(q2) else q2 # TODO uncomment
-        return q1
+        return q1 if len(q1) <= len(q2) else q2
+        # return q1   # TODO remove
+        # return q2
 
     # Build edge disjoint operator sets
     def __build_operator_edp_sets(

@@ -7,20 +7,10 @@ import os
 from pathlib import Path
 from typing import List
 
-from pyqir import (
-    BasicQisBuilder,
-    Call,
-    Context,
-    Module,
-    is_entry_point,
-    is_qubit_type,
-    is_result_type,
-    qubit_id,
-    required_num_qubits,
-    required_num_results,
-    result_id,
-    SimpleModule,
-)
+from pyqir import (BasicQisBuilder, Call, Context, Module, SimpleModule,
+                   is_entry_point, is_qubit_type, is_result_type, qubit_id,
+                   required_num_qubits, required_num_results, result_id)
+
 
 # Create a simple entry point defining the sequence
 def create_bernstein_vazirani() -> SimpleModule:

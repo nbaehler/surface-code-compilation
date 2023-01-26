@@ -52,7 +52,7 @@ class Path:
     def append_vertex(self, vertex: tuple[int, int]) -> None:
         self._vertices.append(vertex)
 
-    # Reverse the path # TODO needed? Remove
+    # Reverse the path
     def reverse(self) -> None:
         self._vertices.reverse()
 
