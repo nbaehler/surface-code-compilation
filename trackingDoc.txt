@@ -86,6 +86,7 @@ JointXX & -ZZ:
 
 QIR-runner:
 - How can I use it to check correctness easily
+- What would be a good test circuit
 
 Jupyter notebook:
 - Template

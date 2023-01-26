@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import abstractmethod
 from enum import Enum
 
-from helpers import is_data_qubit
+from helpers import change_coordinate, is_data_qubit
 
 
 # Enum for the different types of paths for compilation
@@ -42,7 +42,9 @@ class Path:
 
     # String
     def __str__(self) -> str:
-        return str(self._vertices)
+        return str(
+            [(change_coordinate(v[0]), v[1] + 1) for v in self._vertices]
+        ).replace("'", "")
 
     # Iterator
     def __iter__(self):

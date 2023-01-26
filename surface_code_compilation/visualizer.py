@@ -3,7 +3,7 @@ from matplotlib.table import Table
 import matplotlib.colors as mcolors
 
 from path import Path
-from helpers import is_data_qubit
+from helpers import change_coordinate, is_data_qubit
 
 
 class Visualizer:
@@ -64,16 +64,12 @@ class Visualizer:
 
             # Row Labels
             for i in range(nrows):
-                # times = i // 26 + 1 # TODO use characters like in the paper
-                # char = chr((i % 26) + 65)
-
                 tb.add_cell(
                     i,
                     -1,
                     size,
                     size,
-                    # text=char * times,
-                    text=i,
+                    text=change_coordinate(i),
                     loc="right",
                     edgecolor="none",
                     facecolor="none",
@@ -86,8 +82,7 @@ class Visualizer:
                     j,
                     size,
                     size / 2,
-                    # text=j + 1,
-                    text=j,
+                    text=j + 1,
                     loc="center",
                     edgecolor="none",
                     facecolor="none",
