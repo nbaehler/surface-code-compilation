@@ -1,5 +1,6 @@
 from abc import ABC
 from enum import Enum
+from math import pi
 
 from pyqir import SimpleModule, BasicQisBuilder, Value
 
@@ -114,23 +115,64 @@ class MeasureX(SingleQubitGate):
         qis.mz(mod.qubits[q], res)
 
 
+# https://www.researchgate.net/publication/335179815_Entanglement_stabilization_using_ancilla-based_parity_detection_and_real-time_feedback_in_superconducting_circuits
 class MeasureZZ(DoubleQubitGate):  # Vertical only
     def __init__(
-        self, mod: SimpleModule, qis: BasicQisBuilder, q1: int, q2: int, res: Value
+        self,
+        mod: SimpleModule,
+        qis: BasicQisBuilder,
+        q1: int,
+        q2: int,
+        a: int,
+        res: Value,
     ) -> None:
         super().__init__(q1, q2, Orientation.VERTICAL)
 
-        qis.mz(mod.qubits[q1], res)  # TODO: wrong
+        qis.reset(mod.qubits[a])  # TODO needed, which ancilla to use?
+
+        qis.ry(pi / 2, mod.qubits[q1])
+        qis.ry(pi / 2, mod.qubits[q2])
+
+        qis.ry(-pi / 2, mod.qubits[a])
+
+        qis.cx(mod.qubits[q1], mod.qubits[a])
+        qis.cx(mod.qubits[q2], mod.qubits[a])
+
+        qis.ry(pi / 2, mod.qubits[a])
+
+        qis.mz(mod.qubits[a], res)
+
+        qis.if_result(res, lambda: qis.rx(pi, mod.qubits[q2]))
 
 
+# https://www.researchgate.net/publication/335179815_Entanglement_stabilization_using_ancilla-based_parity_detection_and_real-time_feedback_in_superconducting_circuits
 class MeasureXX(DoubleQubitGate):  # Horizontal only
     def __init__(
-        self, mod: SimpleModule, qis: BasicQisBuilder, q1: int, q2: int, res: Value
+        self,
+        mod: SimpleModule,
+        qis: BasicQisBuilder,
+        q1: int,
+        q2: int,
+        a: int,
+        res: Value,
     ) -> None:
         super().__init__(q1, q2, Orientation.HORIZONTAL)
 
-        qis.h(mod.qubits[q1])
-        qis.mz(mod.qubits[q1], res)  # TODO: wrong
+        qis.reset(mod.qubits[a])  # TODO needed, which ancilla to use?
+
+        qis.ry(pi, mod.qubits[q1])
+        qis.ry(pi, mod.qubits[q2])
+
+        qis.ry(-pi / 2, mod.qubits[a])
+
+        qis.cx(mod.qubits[q1], mod.qubits[a])
+        qis.cx(mod.qubits[q2], mod.qubits[a])
+
+        qis.ry(pi / 2, mod.qubits[a])
+
+        qis.mz(mod.qubits[a], res)
+
+        qis.if_result(res, lambda: qis.rx(pi, mod.qubits[q2]))
 
 
 class MeasureBB(DoubleQubitGate):
@@ -148,18 +190,22 @@ class MeasureBB(DoubleQubitGate):
         if self._orientation == Orientation.HORIZONTAL:
             MeasureXX(mod, qis, q1, q2, res1)
 
-            MeasureZ(mod, qis, q1, res2)  # TODO: wrong, need 3 result
+            temp: Value = (
+                None  # TODO: wrong, need 3 results, the temp one is not accepted
+            )
+            MeasureZ(mod, qis, q1, temp)
             MeasureZ(mod, qis, q2, res2)
-
-            res2 = mod.builder.xor(res2, res2)
 
         else:  # Vertical
             MeasureZZ(mod, qis, q1, q2, res1)
 
-            MeasureX(mod, qis, q1, res2)  # TODO: wrong, need 3 result
+            temp: Value = (
+                None  # TODO: wrong, need 3 results, the temp one is not accepted
+            )
+            MeasureX(mod, qis, q1, temp)
             MeasureX(mod, qis, q2, res2)
 
-            res2 = mod.builder.xor(res2, res2)
+        res2 = mod.builder.xor(temp, res2)
 
 
 class Move(DoubleQubitGate):

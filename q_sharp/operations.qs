@@ -63,13 +63,13 @@ namespace Operations {
         return Measure([PauliX, PauliX], [q1, q2]);
     }
 
-    internal operation VerticalMeasureBB(q1 : Qubit, q2 : Qubit) : Result[] { //TODO change this
+    internal operation VerticalMeasureBB(q1 : Qubit, q2 : Qubit) : Result[] {
         let z = VerticalMeasureZZ(q1, q2);
         let x1 = MeasureX(q1);
         let x2 = MeasureX(q2);
         let x = BoolAsResult(x1 != x2);
 
-        return [x, z]; // Not sure!
+        return [x, z]; // TODO Not sure!
     }
 
     internal operation HorizontalMeasureBB(q1 : Qubit, q2 : Qubit) : Result[] {
@@ -78,7 +78,7 @@ namespace Operations {
         let z2 = MeasureZ(q2);
         let z = BoolAsResult(z1 != z2);
 
-        return [x, z]; // Not sure!
+        return [x, z]; // TODO Not sure!
     }
 
     operation LocalCnot(ctl : Qubit, tgt : Qubit, hlp : Qubit): Unit {
@@ -235,28 +235,38 @@ namespace Operations {
         Message($"Got tl={rtl}, br={rbr}");
     }
 
-    operation CustomJointZZ(tl : Bool, br : Bool): Unit {
-        use qtl = Qubit();
-        use qbr = Qubit();
+    operation Joint(q1b : Bool, q2b : Bool, q3b : Bool, q4b : Bool): Unit {
+        use q1 = Qubit();
+        use q2 = Qubit();
+        use q3 = Qubit();
+        use q4 = Qubit();
 
-        PrepareZ(qtl);
-        PrepareZ(qbr);
+        PrepareZ(q1);
+        PrepareZ(q2);
+        PrepareZ(q3);
+        PrepareZ(q4);
 
-        use qtrhlp = Qubit();
-        use qblhlp = Qubit();
-
-        if tl {
-            X(qtl);
+        if q1b {
+            X(q1);
         }
 
-        if br {
-            X(qbr);
+        if q2b {
+            X(q2);
         }
 
-        DiagonalSwap(qtl, qtrhlp, qblhlp, qbr);
+        if q3b {
+            X(q3);
+        }
 
-        let rtl = M(qtl);
-        let rbr = M(qbr);
+        if q4b {
+            X(q4);
+        }
+
+        HorizontalMeasureZZ(q1, q2);
+        HorizontalMeasureXX(q3, q4);
+
+
+
 
         Message($"Got tl={rtl}, br={rbr}");
     }

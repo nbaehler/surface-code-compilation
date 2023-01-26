@@ -8,7 +8,7 @@ def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     n_qubits = int(np.prod(grid_dims))
 
     # Create the module
-    mod = SimpleModule("input_circuit", num_qubits=n_qubits, num_results=n_qubits)
+    mod = SimpleModule("input", num_qubits=n_qubits, num_results=n_qubits)
     qis = BasicQisBuilder(mod.builder)
 
     # Add instructions to the module

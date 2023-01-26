@@ -33,109 +33,94 @@ class Compiler:
     def compile(self) -> str:
         n_qubits = np.prod(self._grid_dims, dtype=int)
 
-        mod = SimpleModule("Output", num_qubits=n_qubits, num_results=n_qubits)
-        qis = BasicQisBuilder(mod.builder)
+        self._mod = SimpleModule("output", num_qubits=n_qubits, num_results=n_qubits)
+        self._qis = BasicQisBuilder(self._mod.builder)
 
-        for epoch in self._scheduling:
-            for path in epoch:
-                if path.get_type() == PathType.LONG_RANGE_CNOT:
-                    self._compile_long_range_cnot(mod, qis, path)
-                elif path.get_type() == PathType.PHASE_1:
-                    self._compile_phase_1(mod, qis, path)
-                else:  # path.get_type() == PathType.PHASE_2:
-                    self._compile_phase_2(mod, qis, path)
+        # for epoch in self._scheduling: # TODO: uncomment
+        #     for path in epoch:
+        # if path.get_type() == PathType.LONG_RANGE_CNOT:
+        #     self._compile_long_range_cnot(path)
+        # elif path.get_type() == PathType.PHASE_1:
+        #     self._compile_phase_1(path)
+        # else:  # path.get_type() == PathType.PHASE_2:
+        #     self._compile_phase_2(path)
 
-        return mod.ir()
+        return self._mod.ir()
 
-    def _compile_long_range_cnot(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
-        self._long_range_bell_prep(mod, qis, path.interior())
+    def _compile_long_range_cnot(self, path: Path) -> None:
+        self._long_range_bell_prep(path.interior())
 
         # Measure ZZ => b
         q1 = flatten(*path[0], self._grid_dims)
         q2 = flatten(*path[1], self._grid_dims)
-        b = mod.results[q1]
-        MeasureZZ(mod, qis, q1, q2, b)
+        b = self._mod.results[q1]
+        MeasureZZ(self._mod, self._qis, q1, q2, b)
 
         # Measure XX => a
         q1 = flatten(*path[-2], self._grid_dims)
         q2 = flatten(*path[-1], self._grid_dims)
-        a = mod.results[q1]
-        MeasureXX(mod, qis, q1, q2, a)
+        a = self._mod.results[q2]
+        MeasureXX(self._mod, self._qis, q1, q2, a)
 
         # Measure X => c
         q = flatten(*path[1], self._grid_dims)
-        c = mod.results[q]
-        MeasureX(mod, qis, q, c)
+        c = self._mod.results[q]
+        MeasureX(self._mod, self._qis, q, c)
 
         # Measure Z => d
         q = flatten(*path[-2], self._grid_dims)
-        d = mod.results[q]
-        MeasureZ(mod, qis, q, d)
+        d = self._mod.results[q]
+        MeasureZ(self._mod, self._qis, q, d)
 
-        a_xor_c = mod.builder.xor(a, c)
-        b_xor_d = mod.builder.xor(b, d)
+        a_xor_c = self._mod.builder.xor(a, c)
+        b_xor_d = self._mod.builder.xor(b, d)
 
         # Z
         q = flatten(*path[0], self._grid_dims)
-        qis.if_result(
+        self._qis.if_result(
             a_xor_c,
-            lambda: Z(mod, qis, q),
+            lambda: Z(self._mod, self._qis, q),
         )
 
         # X
         q = flatten(*path[-1], self._grid_dims)
-        qis.if_result(
+        self._qis.if_result(
             b_xor_d,
-            lambda: X(mod, qis, q),
+            lambda: X(self._mod, self._qis, q),
         )
 
-    def _compile_phase_1(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
+    def _compile_phase_1(self, path: Path) -> None:
         if is_data_qubit(path[0]):  # Control
-            self._long_range_X_prep_with_ZZ_meas(mod, qis, path)
+            self._long_range_X_prep_with_ZZ_meas(path)
         elif is_data_qubit(path[-1]):  # Target
-            self._long_range_Z_prep_with_XX_meas(mod, qis, path)
+            self._long_range_Z_prep_with_XX_meas(path)
         else:
-            self._long_range_bell_prep(mod, qis, path)
+            self._long_range_bell_prep(path)
 
-    def _compile_phase_2(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
+    def _compile_phase_2(self, path: Path) -> None:
         if is_data_qubit(path[0]):  # Control
-            self._long_range_teleport_with_ZZ_meas(mod, qis, path)
+            self._long_range_teleport_with_ZZ_meas(path)
         elif is_data_qubit(path[-1]):  # Target
-            self._long_range_teleport_with_XX_meas(mod, qis, path)
+            self._long_range_teleport_with_XX_meas(path)
         else:
-            self._long_range_bell_meas(mod, qis, path)
+            self._long_range_bell_meas(path)
 
-    def _long_range_bell_prep(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
-        if len(path) % 2 == 1:
-            end = len(path) - 2
+    def _xor(self, a, b):
+        return self._mod.builder.xor(a, b)
 
-            # Move
-            frm = flatten(*path[-2], self._grid_dims)
-            to = flatten(*path[-1], self._grid_dims)
-            Move(
-                mod,
-                qis,
-                frm,
-                to,
-            )
-        else:
-            end = len(path) - 1
+    def _bell_chain(
+        self, path: Path, first: int, last: int
+    ) -> tuple[Value, Value]:  # Path length is always even
+        r_prep = range(first + 1, last - 1, 2)
+        r_meas = range(first, last + 1, 2)
 
-        for i in range(0, end, 2):
+        for i in r_prep:
             # Prepare BB
             q1 = flatten(*path[i], self._grid_dims)
             q2 = flatten(*path[i + 1], self._grid_dims)
             PrepareBB(
-                mod,
-                qis,
+                self._mod,
+                self._qis,
                 q1,
                 q2,
             )
@@ -143,297 +128,219 @@ class Compiler:
         x = []
         z = []
 
-        for i in range(1, end - 1, 2):
+        for i in r_meas:
             # Measure BB
             q1 = flatten(*path[i], self._grid_dims)
             q2 = flatten(*path[i + 1], self._grid_dims)
-            x.append(mod.results[q1])
-            z.append(mod.results[q2])
+            x.append(self._mod.results[q1])
+            z.append(self._mod.results[q2])
             MeasureBB(
-                mod,
-                qis,
+                self._mod,
+                self._qis,
                 q1,
                 q2,
                 x[-1],
                 z[-1],
             )
 
-        def f(a, b):
-            return mod.builder.xor(a, b)
+        return reduce(self._xor, x), reduce(self._xor, z)
 
-        [x, z] = reduce(f, x), reduce(f, z)
+    def _long_range_bell_prep(self, path: Path) -> None:  # Path length is always odd
+        # Prepare BB at start
+        q1 = flatten(*path[0], self._grid_dims)
+        q2 = flatten(*path[1], self._grid_dims)
+        PrepareBB(
+            self._mod,
+            self._qis,
+            q1,
+            q2,
+        )
+
+        # Prepare BB at end
+        q1 = flatten(*path[-3], self._grid_dims)
+        q2 = flatten(*path[-2], self._grid_dims)
+        PrepareBB(
+            self._mod,
+            self._qis,
+            q1,
+            q2,
+        )
+
+        # Bell chain
+        [x, z] = self._bell_chain(path, first=1, last=len(path) - 4)
+
+        # Move
+        frm = flatten(*path[-2], self._grid_dims)
+        to = flatten(*path[-1], self._grid_dims)
+        Move(
+            self._mod,
+            self._qis,
+            frm,
+            to,
+        )
 
         q = flatten(*path[-1], self._grid_dims)
 
-        # Z
-        qis.if_result(x, lambda: Z(mod, qis, q))
-
         # X
-        qis.if_result(z, lambda: X(mod, qis, q))
+        self._qis.if_result(z, lambda: X(self._mod, self._qis, q))
+
+        # Z
+        self._qis.if_result(x, lambda: Z(self._mod, self._qis, q))
 
     def _long_range_bell_meas(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> tuple[Value, Value]:
-        if len(path) % 2 == 1:
-            end = len(path) - 2
+        self, path: Path
+    ) -> tuple[Value, Value]:  # Path length is always odd
+        # Move
+        frm = flatten(
+            *path[-1], self._grid_dims
+        )  # TODO is the direction of the move correct, strange in paper?
+        to = flatten(*path[-2], self._grid_dims)
+        Move(
+            self._mod,
+            self._qis,
+            frm,
+            to,
+        )
 
-            # Move
-            frm = flatten(*path[-1], self._grid_dims)
-            to = flatten(*path[-2], self._grid_dims)
-            Move(mod, qis, frm, to)
-        else:
-            end = len(path) - 1
-
-        for i in range(1, end - 1, 2):
-            # Prepare BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            PrepareBB(mod, qis, q1, q2)
-
-        x = []
-        z = []
-
-        for i in range(0, end, 2):
-            # Measure BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            x.append(mod.results[q1])
-            z.append(mod.results[q2])
-            MeasureBB(
-                mod,
-                qis,
-                q1,
-                q2,
-                x[-1],
-                z[-1],
-            )
-
-        def f(a, b):
-            return mod.builder.xor(a, b)
-
-        return reduce(f, x), reduce(f, z)
+        # Bell chain
+        return self._bell_chain(path, first=0, last=len(path) - 3)
 
     def _long_range_X_prep_with_ZZ_meas(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
+        self, path: Path
+    ) -> None:  # Path length is always even
         # Prepare X
         q = flatten(*path[1], self._grid_dims)
-        PrepareX(mod, qis, q)
-
-        if len(path) % 2 == 1:
-            end = len(path) - 1
-
-            # Move
-            frm = flatten(*path[-2], self._grid_dims)
-            to = flatten(*path[-1], self._grid_dims)
-            Move(mod, qis, frm, to)
-
-        else:
-            end = len(path)
-
-        for i in range(2, end, 2):
-            # Prepare BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            PrepareBB(mod, qis, q1, q2)
+        PrepareX(self._mod, self._qis, q)
 
         # Measure ZZ
         q1 = flatten(*path[0], self._grid_dims)
         q2 = flatten(*path[1], self._grid_dims)
-        z1 = mod.results[q1]
-        MeasureZZ(mod, qis, q1, q2, z1)
+        z_joint = self._mod.results[q1]
+        MeasureZZ(self._mod, self._qis, q1, q2, z_joint)
 
-        x2 = []
-        z2 = []
+        # Prepare BB at end
+        q1 = flatten(*path[-2], self._grid_dims)
+        q2 = flatten(*path[-1], self._grid_dims)
+        PrepareBB(
+            self._mod,
+            self._qis,
+            q1,
+            q2,
+        )
 
-        for i in range(1, end - 1, 2):
-            # Measure BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            x2.append(mod.results[q1])
-            z2.append(mod.results[q2])
-            MeasureBB(
-                mod,
-                qis,
-                q1,
-                q2,
-                x2[-1],
-                z2[-1],
-            )
-
-        def f(a, b):
-            return mod.builder.xor(a, b)
-
-        [x, z] = reduce(f, x2), reduce(f, z2)
-        z = mod.builder.xor(z, z1)
+        # Bell chain
+        [x, z_chain] = self._bell_chain(path, first=1, last=len(path) - 3)
+        z = self._mod.builder.xor(z_chain, z_joint)
 
         q = flatten(*path[-1], self._grid_dims)
 
         # Z
-        qis.if_result(x, lambda: Z(mod, qis, q))
+        self._qis.if_result(x, lambda: Z(self._mod, self._qis, q))
 
         # X
-        qis.if_result(z, lambda: X(mod, qis, q))
+        self._qis.if_result(z, lambda: X(self._mod, self._qis, q))
 
     def _long_range_Z_prep_with_XX_meas(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
+        self, path: Path
+    ) -> None:  # Path length is always even
         # Prepare Z
         q = flatten(*path[-2], self._grid_dims)
-        PrepareZ(mod, qis, q)
-
-        if len(path) % 2 == 1:
-            end = len(path) - 1
-
-            # Move
-            frm = flatten(*path[-1], self._grid_dims)
-            to = flatten(*path[-2], self._grid_dims)
-
-            Move(mod, qis, frm, to)
-
-        else:
-            end = len(path)
-
-        for i in range(0, end, 2):
-            # Prepare BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            PrepareBB(mod, qis, q1, q2)
-
-        # Measure XX
-        q1 = flatten(*path[-1], self._grid_dims)
-        q2 = flatten(*path[-2], self._grid_dims)
-        x1 = mod.results[q1]
-
-        MeasureXX(mod, qis, q1, q2, x1)
-
-        x2 = []
-        z2 = []
-
-        for i in range(1, end - 1, 2):
-            # Measure BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            x2.append(mod.results[q1])
-            z2.append(mod.results[q2])
-            MeasureBB(mod, qis, q1, q2, x2[-1], z2[-1])
-
-        def f(a, b):
-            return mod.builder.xor(a, b)
-
-        [x, z] = reduce(f, x2), reduce(f, z2)
-        x = mod.builder.xor(x, x1)
-
-        q = flatten(*path[0], self._grid_dims)
-
-        # X
-        qis.if_result(z, lambda: X(mod, qis, q))
-
-        # Z
-        qis.if_result(x, lambda: Z(mod, qis, q))
-
-    def _long_range_teleport_with_ZZ_meas(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
-        if len(path) % 2 == 1:
-            end = len(path) - 2
-
-            # Move
-            frm = flatten(*path[-1], self._grid_dims)
-            to = flatten(*path[-2], self._grid_dims)
-            Move(mod, qis, frm, to)
-        else:
-            end = len(path) - 1
-
-        for i in range(1, end - 1, 2):
-            # Prepare BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            PrepareBB(mod, qis, q1, q2)
-
-        a1 = []
-
-        for i in range(2, end, 2):
-            # Measure BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            a1.extend((mod.results[q1], mod.results[q2]))
-            MeasureBB(mod, qis, q1, q2, a1[-2], a1[-1])
-
-        # Measure ZZ
-        q1 = flatten(*path[0], self._grid_dims)
-        q2 = flatten(*path[1], self._grid_dims)
-        a2 = mod.results[q1]
-        MeasureZZ(mod, qis, q1, q2, a2)
-
-        # Measure X
-        q = flatten(*path[1], self._grid_dims)
-        a3 = mod.results[q]
-        MeasureX(mod, qis, q, a3)
-
-        def f(a, b):
-            return mod.builder.xor(a, b)
-
-        a = reduce(f, a1)
-        a = mod.builder.xor(a, a2)
-        a = mod.builder.xor(a, a3)
-
-        # Z
-        q = flatten(*path[0], self._grid_dims)
-        qis.if_result(a, lambda: Z(mod, qis, q))
-
-    def _long_range_teleport_with_XX_meas(
-        self, mod: SimpleModule, qis: BasicQisBuilder, path: Path
-    ) -> None:
-        if len(path) % 2 == 1:
-            end = len(path) - 1
-
-            # Move
-            frm = flatten(*path[-2], self._grid_dims)
-            to = flatten(*path[-1], self._grid_dims)
-            Move(
-                mod,
-                qis,
-                frm,
-                to,
-            )
-
-        else:
-            end = len(path)
-
-        for i in range(1, end - 1, 2):
-            # Prepare BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            PrepareBB(mod, qis, q1, q2)
+        PrepareZ(self._mod, self._qis, q)
 
         # Measure XX
         q1 = flatten(*path[-2], self._grid_dims)
         q2 = flatten(*path[-1], self._grid_dims)
-        a1 = mod.results[q1]
-        MeasureXX(mod, qis, q1, q2, a1)
+        x_joint = self._mod.results[q2]
+        MeasureXX(self._mod, self._qis, q1, q2, x_joint)
 
-        a2 = []
+        # Prepare BB at start
+        q1 = flatten(*path[0], self._grid_dims)
+        q2 = flatten(*path[1], self._grid_dims)
+        PrepareBB(
+            self._mod,
+            self._qis,
+            q1,
+            q2,
+        )
 
-        for i in range(0, end - 2, 2):
-            # Measure BB
-            q1 = flatten(*path[i], self._grid_dims)
-            q2 = flatten(*path[i + 1], self._grid_dims)
-            a2.extend((mod.results[q1], mod.results[q2]))
-            MeasureBB(mod, qis, q1, q2, a2[-2], a2[-1])
+        # Bell chain
+        [x_chain, z] = self._bell_chain(path, first=1, last=len(path) - 3)
+        x = self._mod.builder.xor(x_chain, x_joint)
+
+        q = flatten(*path[0], self._grid_dims)
+
+        # X
+        self._qis.if_result(z, lambda: X(self._mod, self._qis, q))
+
+        # Z
+        self._qis.if_result(x, lambda: Z(self._mod, self._qis, q))
+
+    def _long_range_teleport_with_ZZ_meas(
+        self, path: Path
+    ) -> None:  # Path length is always even
+        # Prepare BB at start
+        q1 = flatten(*path[1], self._grid_dims)
+        q2 = flatten(*path[2], self._grid_dims)
+        PrepareBB(
+            self._mod,
+            self._qis,
+            q1,
+            q2,
+        )
+
+        # Bell chain
+        [x_chain, z_chain] = self._bell_chain(path, first=2, last=len(path) - 2)
+
+        # Measure ZZ
+        q1 = flatten(*path[0], self._grid_dims)
+        q2 = flatten(*path[1], self._grid_dims)
+        z_joint = self._mod.results[q1]
+        MeasureZZ(self._mod, self._qis, q1, q2, z_joint)
+
+        # Measure X
+        q = flatten(*path[1], self._grid_dims)
+        x = self._mod.results[q]
+        MeasureX(self._mod, self._qis, q, x)
+
+        a = self._mod.builder.xor(x_chain, z_chain)
+        a = self._mod.builder.xor(a, z_joint)
+        a = self._mod.builder.xor(a, x)
+
+        # Z
+        q = flatten(*path[0], self._grid_dims)
+        self._qis.if_result(a, lambda: Z(self._mod, self._qis, q))
+
+    def _long_range_teleport_with_XX_meas(
+        self, path: Path
+    ) -> None:  # Path length is always even
+        # Prepare BB at end
+        q1 = flatten(*path[-3], self._grid_dims)
+        q2 = flatten(*path[-2], self._grid_dims)
+        PrepareBB(
+            self._mod,
+            self._qis,
+            q1,
+            q2,
+        )
+
+        # Bell chain
+        [x_chain, z_chain] = self._bell_chain(path, first=0, last=len(path) - 3)
+
+        # Measure XX
+        q1 = flatten(*path[-2], self._grid_dims)
+        q2 = flatten(*path[-1], self._grid_dims)
+        x_joint = self._mod.results[q1]
+        MeasureXX(self._mod, self._qis, q1, q2, x_joint)
 
         # Measure Z
         q = flatten(*path[-2], self._grid_dims)
-        a3 = mod.results[q]
-        MeasureZ(mod, qis, q, a3)
+        z = self._mod.results[q]
+        MeasureZ(self._mod, self._qis, q, z)
 
-        def f(a, b):
-            return mod.builder.xor(a, b)
-
-        a = reduce(f, a2)
-        a = mod.builder.xor(a, a1)
-        a = mod.builder.xor(a, a3)
+        a = self._mod.builder.xor(x_chain, z_chain)
+        a = self._mod.builder.xor(a, x_joint)
+        a = self._mod.builder.xor(a, z)
 
         # X
         q = flatten(*path[-1], self._grid_dims)
-        qis.if_result(a, lambda: X(mod, qis, q))
+        self._qis.if_result(a, lambda: X(self._mod, self._qis, q))

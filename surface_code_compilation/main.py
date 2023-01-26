@@ -1,12 +1,3 @@
-import os
-import sys
-
-sys.path.insert(  # TODO check this
-    1, os.path.join(os.path.dirname(os.path.abspath(__file__)), "../qir-runner")
-)
-
-import tempfile
-
 from compiler import Compiler
 from input_circuit import input_circuit
 from mapper import Identity, PaperIdentity, PaperRenaming, Renaming
@@ -19,10 +10,8 @@ def main():
     in_circ, grid_dims = input_circuit()
     in_qir = in_circ.ir()
 
-    # Write temporary llvm file so that the parser can read it
-    with tempfile.NamedTemporaryFile(
-        suffix=".ll"
-    ) as f:  # https://github.com/qir-alliance/pyqir/blob/a99afdb8126b1ff0a331bdc81aed9930f7bd23b9/examples/evaluator/teleport.py#L36-L40
+    # Write llvm file so that the parser can read it
+    with open("input.ll", "wb") as f:
         f.write(in_qir.encode("utf-8"))
         f.flush()
         cnots = parse_qir(f.name)
@@ -36,17 +25,13 @@ def main():
     print("Infos:")
 
     # Map the qubits according to strategy
-    (n_qubits, mapping, grid_dims) = mapping_strategy(
-        grid_dims, cnots
-    ).map()  # TODO do I need those abstract classes?
+    (n_qubits, mapping, grid_dims) = mapping_strategy(grid_dims, cnots).map()
 
     print(f"Number of qubits used: {n_qubits}")
     print(f"Mapping of qubits: {mapping}")
 
     # Schedule the CNOTs according to strategy
-    scheduling = scheduling_strategy(
-        grid_dims, cnots, mapping
-    ).schedule()  # TODO do I need those abstract classes?
+    scheduling = scheduling_strategy(grid_dims, cnots, mapping).schedule()
 
     scheduling_str = ",\n".join(
         [", ".join([str(path) for path in phase]) for phase in scheduling]
@@ -54,11 +39,13 @@ def main():
     print(f"Scheduling:\n[{scheduling_str}]\n")
 
     # Compile the scheduled CNOTs into QIR
-    qir = Compiler(
-        grid_dims, scheduling
-    ).compile()  # TODO do I need those abstract classes?
+    out_qir = Compiler(grid_dims, scheduling).compile()
 
-    print(f"The resulting QIR code:\n{qir}")
+    print(f"The resulting QIR code:\n{out_qir}")
+
+    with open("output.ll", "wb") as f:
+        f.write(out_qir.encode("utf-8"))
+        f.flush()
 
 
 if __name__ == "__main__":
