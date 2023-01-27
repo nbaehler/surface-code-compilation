@@ -12,49 +12,49 @@ class Logger(GateSet):
         self.instructions.append((int(control), int(target)))
 
     def cz(self, control: str, target: str) -> None:
-        print(f" Ignored: cz qubit[{control}], qubit[{target}]")
+        print(f"Ignored: cz qubit[{control}], qubit[{target}]")
 
     def h(self, target: str) -> None:
-        print(f" Ignored: h qubit[{target}]")
+        print(f"Ignored: h qubit[{target}]")
 
     def m(self, qubit: str, target: str) -> None:
-        print(f" Ignored: m qubit[{qubit}] => out[{target}]")
+        print(f"Ignored: m qubit[{qubit}] => out[{target}]")
 
     def mz(self, qubit: str, target: str) -> None:
-        print(f" Ignored: m qubit[{qubit}] => out[{target}]")
+        print(f"Ignored: mz qubit[{qubit}] => out[{target}]")
 
     def reset(self, target: str) -> None:
-        print(f" Ignored: reset {target}")
+        print(f"Ignored: reset {target}")
 
     def rx(self, theta: float, qubit: str) -> None:
-        print(f" Ignored: rx theta[{theta}] qubit[{qubit}]")
+        print(f"Ignored: rx theta[{theta}] qubit[{qubit}]")
 
     def ry(self, theta: float, qubit: str) -> None:
-        print(f" Ignored: ry theta[{theta}] qubit[{qubit}]")
+        print(f"Ignored: ry theta[{theta}] qubit[{qubit}]")
 
     def rz(self, theta: float, qubit: str) -> None:
-        print(f" Ignored: rz theta[{theta}] qubit[{qubit}]")
+        print(f"Ignored: rz theta[{theta}] qubit[{qubit}]")
 
     def s(self, qubit: str) -> None:
-        print(f" Ignored: s qubit[{qubit}]")
+        print(f"Ignored: s qubit[{qubit}]")
 
     def s_adj(self, qubit: str) -> None:
-        print(f" Ignored: s_adj qubit[{qubit}]")
+        print(f"Ignored: s_adj qubit[{qubit}]")
 
     def t(self, qubit: str) -> None:
-        print(f" Ignored: t qubit[{qubit}]")
+        print(f"Ignored: t qubit[{qubit}]")
 
     def t_adj(self, qubit: str) -> None:
-        print(f" Ignored: t_adj qubit[{qubit}]")
+        print(f"Ignored: t_adj qubit[{qubit}]")
 
     def x(self, qubit: str) -> None:
-        print(f" Ignored: x qubit[{qubit}]")
+        print(f"Ignored: x qubit[{qubit}]")
 
     def y(self, qubit: str) -> None:
-        print(f" Ignored: y qubit[{qubit}]")
+        print(f"Ignored: y qubit[{qubit}]")
 
     def z(self, qubit: str) -> None:
-        print(f" Ignored: z qubit[{qubit}]")
+        print(f"Ignored: z qubit[{qubit}]")
 
 
 # Parse the qir file and log all the cnots

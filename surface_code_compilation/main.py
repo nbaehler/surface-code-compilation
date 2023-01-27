@@ -1,6 +1,8 @@
 import os
+import tempfile
 
 from compiler import Compiler
+from helpers import make_runnable
 from input_circuit import input_circuit
 from mapper import Identity, PaperIdentity, PaperRenaming, Renaming
 from qir_parser import parse_qir
@@ -10,16 +12,24 @@ from visualizer import Visualizer
 
 def main():
     # Generated circuit using the QIR-Alliance generator
-    in_circ, grid_dims = input_circuit()
-    in_qir = in_circ.ir()
+    mod, grid_dims = input_circuit()
 
     root_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 
-    # Write llvm file so that the parser can read it
-    with open(os.path.join(root_dir, "input.ll"), "wb") as f:
-        f.write(in_qir.encode("utf-8"))
+    # Write temporary llvm file so that the parser can read it
+    with tempfile.NamedTemporaryFile(
+        suffix=".ll"
+    ) as f:  # https://github.com/qir-alliance/pyqir/blob/a99afdb8126b1ff0a331bdc81aed9930f7bd23b9/examples/evaluator/teleport.py#L36-L40
+        f.write(mod.ir().encode("utf-8"))
         f.flush()
         cnots = parse_qir(f.name)
+
+    make_runnable(mod)
+
+    # Write llvm file that can be run by the qir-runner
+    with open(os.path.join(root_dir, "input.ll"), "wb") as f:
+        f.write(mod.ir().encode("utf-8"))
+        f.flush()
 
     # Select strategies
     # mapping_strategy, scheduling_strategy = Identity, Sequential
@@ -41,13 +51,12 @@ def main():
     scheduling_str = ",\n".join(
         [", ".join([str(path) for path in phase]) for phase in scheduling]
     )
-    print(f"Scheduling:\n[{scheduling_str}]\n")
+    print(f"Scheduling: [{scheduling_str}]")
 
     # Compile the scheduled CNOTs into QIR
     out_qir = Compiler(grid_dims, scheduling).compile()
 
-    print(f"The resulting QIR code:\n{out_qir}")
-
+    # Write the output QIR
     with open(os.path.join(root_dir, "output.ll"), "wb") as f:
         f.write(out_qir.encode("utf-8"))
         f.flush()

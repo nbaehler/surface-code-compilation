@@ -13,6 +13,9 @@ class PathType(Enum):
     PHASE_2 = 2
 
 
+color_id = 0
+
+
 # Class modelling a path containing all vertices in the operator graph
 class Path:
     def __init__(
@@ -87,6 +90,12 @@ class Path:
 
     def interior(self) -> Path:
         return Path(self._type, self._vertices[1:-1])
+
+    def get_color_id(self) -> int:
+        return self._color_id
+
+    def set_color_id(self, color_id: int) -> None:
+        self._color_id = color_id
 
 
 # Iterator over the vertices of a path

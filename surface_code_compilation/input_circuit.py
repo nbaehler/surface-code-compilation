@@ -1,5 +1,8 @@
 import numpy as np
-from pyqir import BasicQisBuilder, SimpleModule
+from pyqir import (
+    BasicQisBuilder,
+    SimpleModule,
+)
 
 
 def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
@@ -25,6 +28,9 @@ def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     # qis.cx(
     #     mod.qubits[0], mod.qubits[3]
     # )
+
+    # qis.x(mod.qubits[6])
+    # qis.mz(mod.qubits[6], mod.results[6])
 
     qis.cx(mod.qubits[6], mod.qubits[18])
     qis.cx(mod.qubits[16], mod.qubits[8])

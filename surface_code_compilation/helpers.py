@@ -1,3 +1,6 @@
+from pyqir import Constant, FunctionType, IntType, PointerType, SimpleModule, Type
+
+
 # Convert a 2D index into a 1D index
 def flatten(r: int, c: int, grid_dims: tuple[int, int]) -> int:
     return r * grid_dims[1] + c
@@ -17,3 +20,19 @@ def change_coordinate(row: int) -> str:
     times = row // 26 + 1
     char = chr((row % 26) + 65)
     return char * times
+
+
+def make_runnable(mod: SimpleModule) -> None:
+    i8p = PointerType(IntType(mod.context, 8))
+
+    dump_machine = mod.add_external_function(
+        "__quantum__qis__dumpmachine__body",
+        FunctionType(
+            Type.void(mod.context),
+            [i8p],
+        ),
+    )
+    mod.builder.call(
+        dump_machine,
+        [Constant.null(i8p)],
+    )

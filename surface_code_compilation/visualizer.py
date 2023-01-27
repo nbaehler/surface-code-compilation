@@ -1,9 +1,8 @@
-import matplotlib.pyplot as plt
-from matplotlib.table import Table
 import matplotlib.colors as mcolors
-
-from path import Path
+import matplotlib.pyplot as plt
 from helpers import change_coordinate, is_data_qubit
+from matplotlib.table import Table
+from path import Path
 
 
 class Visualizer:
@@ -44,7 +43,7 @@ class Visualizer:
 
                     tb.add_cell(i, j, size, size, facecolor=color)
 
-            for c, path in enumerate(epoch):
+            for path in epoch:
                 for i, qubit in enumerate(path):
                     if i == 0 and is_data_qubit(qubit):
                         text = f"{i}\nCONTROL"
@@ -57,7 +56,7 @@ class Visualizer:
                         *qubit,
                         size,
                         size,
-                        facecolor=colors[c],
+                        facecolor=colors[path.get_color_id() % len(colors)],
                         text=text,
                         loc="center",
                     )

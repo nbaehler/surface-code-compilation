@@ -30,13 +30,26 @@ class Scheduler(ABC):
         pass
 
 
+def assign_color_ids(scheduling: list[list[Path]]) -> None:
+    color_id = 0
+
+    for epoch in scheduling:
+        for path in epoch:
+            path.set_color_id(color_id)
+            color_id += 1
+
+
 # Scheduler that does not perform any optimization and simply schedules the
 # operations sequentially
 class Sequential(Scheduler):
     def schedule(self):
-        return [
+        scheduling = [
             [DirectKeyPath(cnot[0], cnot[1]).extend_to_path()] for cnot in self._cnots
         ]
+
+        assign_color_ids(scheduling)
+
+        return scheduling
 
 
 # Scheduler that is based on the paper
@@ -45,6 +58,8 @@ class EDPC(Scheduler):
         # Compute operator EDP sets
         # First approach, using the paper's novel algorithm
         operator_edp_sets = self.__build_operator_edp_sets()
+
+        assign_color_ids(operator_edp_sets)
 
         # Split operator EDP sets into operator VDP sets
         q1 = []
@@ -61,7 +76,8 @@ class EDPC(Scheduler):
         operator_graph = OperatorGraph(self._grid_dims, self._cnots)
         operator_graph._build_initial_operator_graph()
 
-        terminal_pairs = self._cnots.copy()  # TODO copy needed?
+        # terminal_pairs = self._cnots.copy()  # TODO copy needed?
+        terminal_pairs = self._cnots
 
         # Second approach, using the greedy algorithm
         q2 = []
@@ -81,16 +97,17 @@ class EDPC(Scheduler):
 
             q2.append(p_star)
 
+        assign_color_ids(q2)
+
         # Pick the shorter scheduling of both approaches
-        return q1 if len(q1) <= len(q2) else q2
-        # return q1   # TODO remove
-        # return q2
+        # return q1 if len(q1) <= len(q2) else q2
+        return q1
 
     # Build edge disjoint operator sets
     def __build_operator_edp_sets(
         self,
-    ) -> list[list[PaperKeyPath]]:
-        paths = [PaperKeyPath(ctrl, tgt) for ctrl, tgt in self._cnots]
+    ) -> list[list[Path]]:
+        paths = [PaperKeyPath(ctrl, tgt).extend_to_path() for ctrl, tgt in self._cnots]
 
         # Construct operator EDP sets
         operator_edp_sets = [[]]
@@ -125,7 +142,7 @@ class EDPC(Scheduler):
     # Split operator EDP set into two operator VDP sets
     def __edp_subroutine(  # TODO slightly different from the paper
         self,
-        operator_edp_set: list[PaperKeyPath],
+        operator_edp_set: list[Path],
     ) -> tuple[list[Path], list[Path]]:
         paths = [path.extend_to_path() for path in operator_edp_set]
 
@@ -165,12 +182,12 @@ class EDPC(Scheduler):
         # Assign all vertex disjoint paths to the first phase
         p1, p2 = [paths[i] for i in vertex_disjoint_path_idx], []
 
-        for i in paths_to_split_idx:
+        for i, vertices in paths_to_split_idx.items():
             current_path = paths[i]
             phase = []
 
             for j, vertex in enumerate(current_path):
-                if vertex in paths_to_split_idx[i]:
+                if vertex in vertices:
                     phase[j - 1] = 2
                     phase.extend((2, 2))
                 elif len(phase) == j:
@@ -179,22 +196,32 @@ class EDPC(Scheduler):
             current_phase = phase[0]
             current_vertices = [current_path[0]]
             for j in range(1, len(phase)):
-                if phase[j] != current_phase:
+                if phase[j] == current_phase:
+                    current_vertices.append(current_path[j])
+
+                else:
+                    current_color_id = current_path.get_color_id()
                     if current_phase == 1:
                         current_vertices.append(current_path[j])
-                        p1.append(Path(PathType.PHASE_1, current_vertices))
+                        path = Path(PathType.PHASE_1, current_vertices)
+                        path.set_color_id(current_color_id)
+                        p1.append(path)
                     elif current_phase == 2:
-                        p2.append(Path(PathType.PHASE_2, current_vertices))
+                        path = Path(PathType.PHASE_2, current_vertices)
+                        path.set_color_id(current_color_id)
+                        p2.append(path)
 
                     current_phase = phase[j]
                     current_vertices = [current_path[j]]
-                else:
-                    current_vertices.append(current_path[j])
-
+            current_color_id = current_path.get_color_id()
             if current_phase == 1:
-                p1.append(Path(PathType.PHASE_1, current_vertices))
+                path = Path(PathType.PHASE_1, current_vertices)
+                path.set_color_id(current_color_id)
+                p1.append(path)
             elif current_phase == 2:
-                p2.append(Path(PathType.PHASE_2, current_vertices))
+                path = Path(PathType.PHASE_2, current_vertices)
+                path.set_color_id(current_color_id)
+                p2.append(path)
 
         return p1, p2
 

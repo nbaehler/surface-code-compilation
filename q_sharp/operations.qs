@@ -69,7 +69,7 @@ namespace Operations {
         let x2 = MeasureX(q2);
         let x = BoolAsResult(x1 != x2);
 
-        return [x, z]; // TODO Not sure!
+        return [x, z]; // Not sure!
     }
 
     internal operation HorizontalMeasureBB(q1 : Qubit, q2 : Qubit) : Result[] {
@@ -78,7 +78,7 @@ namespace Operations {
         let z2 = MeasureZ(q2);
         let z = BoolAsResult(z1 != z2);
 
-        return [x, z]; // TODO Not sure!
+        return [x, z]; // Not sure!
     }
 
     operation LocalCnot(ctl : Qubit, tgt : Qubit, hlp : Qubit): Unit {
