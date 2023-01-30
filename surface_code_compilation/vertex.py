@@ -1,3 +1,5 @@
+from abc import abstractmethod
+
 # Class representing nodes in the operator graph
 class Vertex:
     def __init__(self) -> None:
@@ -15,17 +17,25 @@ class Vertex:
 
         return self._neighbors[i]
 
+    # Length of the neighbor list
     def __len__(self) -> int:
         return len(self._neighbors)
 
+    # Iterator
     def __iter__(self):
         return NeighborsIterator(self)
 
+    # Append a neighbor to the vertex
     def append_neighbor(self, vertex: tuple[int, int]) -> None:
         self._neighbors.append(vertex)
 
+    # Remove a neighbor from the vertex
     def remove_neighbor(self, vertex: tuple[int, int]) -> None:
         self._neighbors.remove(vertex)
+
+    @abstractmethod
+    def restore_initial_neighbors(self) -> None:
+        pass
 
 
 # Iterator over the neighbors of a vertex
@@ -45,40 +55,53 @@ class NeighborsIterator:
 
 # Class representing the starting vertex of path, has to be a data qubit
 class Start(Vertex):
-    def __init__(self, i: tuple[int, int]) -> None:
+    def __init__(self, idx: tuple[int, int]) -> None:
         super().__init__()
 
+        self._idx = idx
+        self._restore_initial_neighbors()
+
+    def _restore_initial_neighbors(self) -> None:
         # Vertical neighbors only
-        self.append_neighbor((i[0] - 1, i[1]))
-        self.append_neighbor((i[0] + 1, i[1]))
+        self.append_neighbor((self._idx[0] - 1, self._idx[1]))
+        self.append_neighbor((self._idx[0] + 1, self._idx[1]))
 
 
 # Class representing the stopping vertex of path, has to be a data qubit
 class Stop(Vertex):
-    def __init__(self, i: tuple[int, int]) -> None:
+    def __init__(self, idx: tuple[int, int]) -> None:
         super().__init__()
 
+        self._idx = idx
+        self._restore_initial_neighbors()
+
+    def _restore_initial_neighbors(self) -> None:
         # Horizontal neighbors only
-        self.append_neighbor((i[0], i[1] - 1))
-        self.append_neighbor((i[0], i[1] + 1))
+        self.append_neighbor((self._idx[0], self._idx[1] - 1))
+        self.append_neighbor((self._idx[0], self._idx[1] + 1))
 
 
 # Class representing a vertex in the middle of a path, must be an ancilla qubit
-# aka no data qubit
+# i.e. no data qubit
 class Ancilla(Vertex):
-    def __init__(self, i: tuple[int, int], grid_dims: tuple[int, int]) -> None:
+    def __init__(self, idx: tuple[int, int], grid_dims: tuple[int, int]) -> None:
         super().__init__()
 
+        self._idx = idx
+        self._grid_dims = grid_dims
+        self._restore_initial_neighbors()
+
+    def _restore_initial_neighbors(self) -> None:
         # Initialize neighbors while checking for border cases
-        if i[1] % 2 == 0:
-            if i[0] > 0:
-                self.append_neighbor((i[0] - 1, i[1]))
+        if self._idx[1] % 2 == 0:
+            if self._idx[0] > 0:
+                self.append_neighbor((self._idx[0] - 1, self._idx[1]))
 
-            if i[0] < grid_dims[0] - 1:
-                self.append_neighbor((i[0] + 1, i[1]))
-        if i[0] % 2 == 0:
-            if i[1] > 0:
-                self.append_neighbor((i[0], i[1] - 1))
+            if self._idx[0] < self._grid_dims[0] - 1:
+                self.append_neighbor((self._idx[0] + 1, self._idx[1]))
+        if self._idx[0] % 2 == 0:
+            if self._idx[1] > 0:
+                self.append_neighbor((self._idx[0], self._idx[1] - 1))
 
-            if i[1] < grid_dims[1] - 1:
-                self.append_neighbor((i[0], i[1] + 1))
+            if self._idx[1] < self._grid_dims[1] - 1:
+                self.append_neighbor((self._idx[0], self._idx[1] + 1))

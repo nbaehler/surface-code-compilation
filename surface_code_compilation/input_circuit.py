@@ -4,10 +4,12 @@ from pyqir import (
     SimpleModule,
 )
 
+from helpers import flatten
+
 
 def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     # Fix the grid dimensions and hence number of qubits
-    grid_dims = (6, 6)
+    grid_dims = (9, 9)
     n_qubits = int(np.prod(grid_dims))
 
     # Create the module
@@ -15,24 +17,10 @@ def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     qis = BasicQisBuilder(mod.builder)
 
     # Add instructions to the module
-    # qis.cx(mod.qubits[0], mod.qubits[1])
-    # qis.cx(mod.qubits[2], mod.qubits[3])
-    # qis.cx(mod.qubits[0], mod.qubits[1])
-
-    # qis.cx(mod.qubits[6], mod.qubits[8])
-    # qis.cx(mod.qubits[16], mod.qubits[18])
-    # qis.cx(mod.qubits[6], mod.qubits[8])
-
-    # qis.cx(mod.qubits[0], mod.qubits[1])
-    # qis.cx(mod.qubits[2], mod.qubits[3])
-    # qis.cx(
-    #     mod.qubits[0], mod.qubits[3]
-    # )
-
-    # qis.x(mod.qubits[6])
-    # qis.mz(mod.qubits[6], mod.results[6])
-
-    qis.cx(mod.qubits[6], mod.qubits[18])
-    qis.cx(mod.qubits[16], mod.qubits[8])
+    qis.cx(mod.qubits[flatten(7, 3, grid_dims)], mod.qubits[flatten(1, 1, grid_dims)])
+    qis.cx(mod.qubits[flatten(5, 1, grid_dims)], mod.qubits[flatten(3, 1, grid_dims)])
+    qis.cx(mod.qubits[flatten(1, 5, grid_dims)], mod.qubits[flatten(5, 3, grid_dims)])
+    qis.cx(mod.qubits[flatten(1, 7, grid_dims)], mod.qubits[flatten(1, 3, grid_dims)])
+    qis.cx(mod.qubits[flatten(5, 7, grid_dims)], mod.qubits[flatten(5, 5, grid_dims)])
 
     return mod, grid_dims

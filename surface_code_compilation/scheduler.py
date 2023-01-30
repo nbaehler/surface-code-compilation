@@ -30,6 +30,7 @@ class Scheduler(ABC):
         pass
 
 
+# Helper function that assigns color IDs to the paths in the given scheduling
 def assign_color_ids(scheduling: list[list[Path]]) -> None:
     color_id = 0
 
@@ -55,11 +56,9 @@ class Sequential(Scheduler):
 # Scheduler that is based on the paper
 class EDPC(Scheduler):
     def schedule(self):
-        # Compute operator EDP sets
-        # First approach, using the paper's novel algorithm
-        operator_edp_sets = self.__build_operator_edp_sets()
-
-        assign_color_ids(operator_edp_sets)
+        # First approach, using the paper's novel algorithm. compute the
+        # operator EDP sets
+        operator_edp_sets = self.__compute_operator_edp_sets()
 
         # Split operator EDP sets into operator VDP sets
         q1 = []
@@ -72,20 +71,15 @@ class EDPC(Scheduler):
             if p2:
                 q1.append(p2)
 
-        # Build operator graph
+        # Second approach, using the greedy algorithm, build operator graph
         operator_graph = OperatorGraph(self._grid_dims, self._cnots)
-        operator_graph._build_initial_operator_graph()
 
-        # terminal_pairs = self._cnots.copy()  # TODO copy needed?
-        terminal_pairs = self._cnots
-
-        # Second approach, using the greedy algorithm
         q2 = []
-        while terminal_pairs:
+        while self._cnots:
             # Compute as many minimal length shortest path between terminal
             # pairs as possible that do not intersect
             covered_terminal_pairs, p_star = self.__greedy_vdp(
-                operator_graph, terminal_pairs
+                operator_graph, self._cnots
             )
 
             # Make progress
@@ -93,18 +87,20 @@ class EDPC(Scheduler):
 
             # Remove the covered terminal pairs
             for pair in covered_terminal_pairs:
-                terminal_pairs.remove(pair)
+                self._cnots.remove(pair)
 
             q2.append(p_star)
 
-        assign_color_ids(q2)
-
         # Pick the shorter scheduling of both approaches
-        # return q1 if len(q1) <= len(q2) else q2
-        return q1
+        scheduling = q1 if len(q1) <= len(q2) else q2
 
-    # Build edge disjoint operator sets
-    def __build_operator_edp_sets(
+        # Assign color IDs to the paths
+        assign_color_ids(scheduling)
+
+        return scheduling
+
+    # Compute edge disjoint operator sets
+    def __compute_operator_edp_sets(
         self,
     ) -> list[list[Path]]:
         paths = [PaperKeyPath(ctrl, tgt).extend_to_path() for ctrl, tgt in self._cnots]
@@ -139,12 +135,13 @@ class EDPC(Scheduler):
 
         return operator_edp_sets
 
-    # Split operator EDP set into two operator VDP sets
-    def __edp_subroutine(  # TODO slightly different from the paper
+    # Find the vertex disjoint paths in the given operator EDP set, the
+    # remaining paths are subsequently split into two operator VDP sets
+    def __edp_subroutine(
         self,
         operator_edp_set: list[Path],
     ) -> tuple[list[Path], list[Path]]:
-        paths = [path.extend_to_path() for path in operator_edp_set]
+        paths = operator_edp_set
 
         # For each path pair check if they are vertex disjoint
         paths_to_split_idx = {}
@@ -171,9 +168,9 @@ class EDPC(Scheduler):
             else (paths, [])
         )
 
-    # Given crossing vertices and paths, fragment the operator EDP set into two
+    # Given the intersecting paths, fragment the operator EDP set into two
     # operator VDP sets
-    def __fragment_edp_set(
+    def __fragment_edp_set(  # TODO add good comments/documentation
         self,
         paths: list[Path],
         vertex_disjoint_path_idx: list[int],
@@ -203,11 +200,15 @@ class EDPC(Scheduler):
                     current_color_id = current_path.get_color_id()
                     if current_phase == 1:
                         current_vertices.append(current_path[j])
-                        path = Path(PathType.PHASE_1, current_vertices)
+                        path = Path(
+                            PathType.PHASE_1, current_path._color_id, current_vertices
+                        )
                         path.set_color_id(current_color_id)
                         p1.append(path)
                     elif current_phase == 2:
-                        path = Path(PathType.PHASE_2, current_vertices)
+                        path = Path(
+                            PathType.PHASE_2, current_path._color_id, current_vertices
+                        )
                         path.set_color_id(current_color_id)
                         p2.append(path)
 
@@ -215,11 +216,11 @@ class EDPC(Scheduler):
                     current_vertices = [current_path[j]]
             current_color_id = current_path.get_color_id()
             if current_phase == 1:
-                path = Path(PathType.PHASE_1, current_vertices)
+                path = Path(PathType.PHASE_1, current_path._color_id, current_vertices)
                 path.set_color_id(current_color_id)
                 p1.append(path)
             elif current_phase == 2:
-                path = Path(PathType.PHASE_2, current_vertices)
+                path = Path(PathType.PHASE_2, current_path._color_id, current_vertices)
                 path.set_color_id(current_color_id)
                 p2.append(path)
 
@@ -243,7 +244,7 @@ class EDPC(Scheduler):
                 used.add(pair[1])
 
         covered_terminal_pairs = []
-        operator_graph._build_initial_operator_graph()  # TODO do it by only adding back the ancillas that were removed, add a reset function that only restores neighbors etc
+        operator_graph._restore_initial_state()
 
         # While not all terminal pairs have been connected
         while unique_terminal_pairs != []:

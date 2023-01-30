@@ -13,8 +13,7 @@ class OperatorGraph:
         self._grid_dims: tuple[int, int] = grid_dims
         self._cnots: list[tuple[tuple[int, int], tuple[int, int]]] = cnots
 
-    # Set up the operator graph, initialize all ancilla vertices
-    def _build_initial_operator_graph(self) -> None:
+        # Set up the operator graph, initialize all ancilla vertices
         self._operator_graph = np.empty(self._grid_dims, dtype=Vertex)
 
         for i in range(self._grid_dims[0]):
@@ -24,6 +23,12 @@ class OperatorGraph:
                     self._operator_graph[i, j] = Ancilla((i, j), self._grid_dims)
                 else:
                     self._operator_graph[i, j] = Vertex()
+
+    # Restore the initial state of the operator graph
+    def _restore_initial_state(self) -> None:
+        for i in range(self._grid_dims[0]):
+            for j in range(self._grid_dims[1]):
+                self._operator_graph[i, j].restore_initial_neighbors()
 
     # Add a terminal pair to the operator graph
     def _add_terminal_pair(
@@ -67,7 +72,7 @@ class OperatorGraph:
 
     # Compute the the shortest path between start and stop vertices in the
     # operator graph
-    def _shortest_path(  # TODO BFS algorithm, paper uses Dijkstra's algorithm
+    def _shortest_path(  # BFS algorithm, paper uses Dijkstra's algorithm
         self, start: tuple[int, int], stop: tuple[int, int]
     ) -> Path:
         distances = np.full(self._grid_dims, -1, dtype=int)

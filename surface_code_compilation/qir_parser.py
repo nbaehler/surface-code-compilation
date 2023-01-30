@@ -61,7 +61,7 @@ class Logger(GateSet):
 def parse_qir(file: str):
     evaluator = (
         NonadaptiveEvaluator()
-    )  # TODO not complete syntax https://github.com/qir-alliance/pyqir/tree/main/pyqir-evaluator#pyqir-evaluator
+    )  # TODO Does not support complete syntax of qir, but is sufficient for now. Will be phased out in the future
     logger = Logger()
 
     evaluator.eval(file, logger)

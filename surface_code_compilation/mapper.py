@@ -67,16 +67,26 @@ class Renaming(Mapper):
         return n_qubits, mapping, self._grid_dims
 
 
+def _check_grid_dimensions(grid_dims: tuple[int, int]) -> tuple[tuple[int, int], int]:
+    # Make sure that the grid dimensions are odd
+    if grid_dims[0] % 2 == 0:
+        grid_dims = (grid_dims[0] - 1, grid_dims[1])
+
+    if grid_dims[1] % 2 == 0:
+        grid_dims = (grid_dims[0], grid_dims[1] - 1)
+
+    # Compute number of qubits
+    n_qubits = int(np.prod(grid_dims))
+
+    return grid_dims, n_qubits
+
+
 class PaperIdentity(Mapper):
     def map(
         self,
-    ):  # TODO for now 5x5 with ancillas all around, but we only need ancillas on the top and left side if we chose always the same paths
+    ):
         # Make sure that the grid dimensions are odd
-        if self._grid_dims[0] % 2 == 0:
-            self._grid_dims = (self._grid_dims[0] - 1, self._grid_dims[1])
-
-        if self._grid_dims[1] % 2 == 0:
-            self._grid_dims = (self._grid_dims[0], self._grid_dims[1] - 1)
+        self._grid_dims, n_qubits = _check_grid_dimensions(self._grid_dims)
 
         n_qubits = int(np.prod(self._grid_dims))
 
@@ -102,15 +112,9 @@ class PaperIdentity(Mapper):
 class PaperRenaming(Mapper):
     def map(
         self,
-    ):  # TODO for now 5x5 with ancillas all around, but we only need ancillas on the top and left side if we chose always the same paths
+    ):
         # Make sure that the grid dimensions are odd
-        if self._grid_dims[0] % 2 == 0:
-            self._grid_dims = (self._grid_dims[0] - 1, self._grid_dims[1])
-
-        if self._grid_dims[1] % 2 == 0:
-            self._grid_dims = (self._grid_dims[0], self._grid_dims[1] - 1)
-
-        n_qubits = int(np.prod(self._grid_dims))
+        self._grid_dims, n_qubits = _check_grid_dimensions(self._grid_dims)
 
         # Compute intermediate mapping
         n_data_max = (self._grid_dims[0] // 2) * (self._grid_dims[1] // 2)

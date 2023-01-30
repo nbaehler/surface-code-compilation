@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-from abc import abstractmethod
 from enum import Enum
 
-from helpers import change_coordinate, is_data_qubit
+from helpers import compute_equivalent_letter, is_data_qubit
 
 
 # Enum for the different types of paths for compilation
@@ -13,20 +12,19 @@ class PathType(Enum):
     PHASE_2 = 2
 
 
-color_id = 0
-
-
 # Class modelling a path containing all vertices in the operator graph
 class Path:
     def __init__(
         self,
         type: PathType = None,
+        color_id: int = None,
         vertices: list[tuple[int, int]] = None,
     ) -> None:
         super().__init__()
 
         self._vertices = [] if vertices is None else vertices
         self._type = PathType.LONG_RANGE_CNOT if type is None else type
+        self._color_id = color_id
 
     # Getter
     def __getitem__(self, i: int) -> tuple[int, int]:
@@ -46,7 +44,7 @@ class Path:
     # String
     def __str__(self) -> str:
         return str(
-            [(change_coordinate(v[0]), v[1] + 1) for v in self._vertices]
+            [(compute_equivalent_letter(v[0]), v[1] + 1) for v in self._vertices]
         ).replace("'", "")
 
     # Iterator
@@ -76,24 +74,26 @@ class Path:
 
         return not e1.intersection(e2)
 
+    # Check if the terminals of the path are disjoint from another path
     def is_terminal_disjoint(self, other: Path) -> bool:
         first = self._vertices
         second = other._vertices
 
         return first[0] != second[0] and first[-1] != second[-1]
 
-    def extend_to_path(self) -> Path:  # TODO needed? Remove, this is empty!
-        return self
-
+    # Getter for the type of the path
     def get_type(self) -> PathType:
         return self._type
 
+    # Returns new path without the current terminals, i.e. the interior of the path
     def interior(self) -> Path:
-        return Path(self._type, self._vertices[1:-1])
+        return Path(self._type, self._color_id, self._vertices[1:-1])
 
+    # Getter for the color of the path
     def get_color_id(self) -> int:
         return self._color_id
 
+    # Setter for the color of the path
     def set_color_id(self, color_id: int) -> None:
         self._color_id = color_id
 
@@ -123,7 +123,7 @@ class KeyPath(Path):
 
     # Extend the KeyPath to a normal Path i.e. fill in the missing vertices
     def extend_to_path(self) -> Path:
-        path = Path(self._type)
+        path = Path(self._type, self._color_id)
 
         # Add start vertex
         path.append_vertex(self._vertices[0])
@@ -144,10 +144,6 @@ class KeyPath(Path):
 
         return path
 
-    @abstractmethod
-    def is_edge_disjoint(self, other: KeyPath) -> bool:
-        pass
-
 
 # Class for KeyPaths that are described in the paper
 class PaperKeyPath(KeyPath):
@@ -160,19 +156,13 @@ class PaperKeyPath(KeyPath):
         start_r, start_c = start
         stop_r, stop_c = stop
 
-        self._vertices = [  # TODO They are not consistent in the paper, the use this path scheme in proofs but then use different ones in the graphics
+        self._vertices = [  # They are not consistent in the paper, the use this path scheme in proofs but then use different ones in the graphics
             (start_r, start_c),
             (start_r - 1, start_c),
             (start_r - 1, stop_c - 1),
             (stop_r, stop_c - 1),
             (stop_r, stop_c),
         ]
-
-    # Check if the path is edge-disjoint from another path
-    def is_edge_disjoint(
-        self, other: PaperKeyPath
-    ) -> bool:  # TODO more efficient, direct way
-        return self.extend_to_path().is_edge_disjoint(other.extend_to_path())
 
 
 # Class for KeyPaths that are optimized in the sense that they are shorter than the paths described in the paper
@@ -222,8 +212,3 @@ class DirectKeyPath(KeyPath):
 
         # End
         assert current_r == stop_r and current_c == stop_c
-
-    def is_edge_disjoint(
-        self, other: PaperKeyPath
-    ) -> bool:  # TODO more efficient, direct way
-        return self.extend_to_path().is_edge_disjoint(other.extend_to_path())

@@ -3,25 +3,23 @@ from enum import Enum
 
 from pyqir import BasicQisBuilder, SimpleModule
 
-# Enum modeling the orientation of double qubit gates
+
 class Orientation(Enum):
     HORIZONTAL = 0
     VERTICAL = 1
 
 
-# Class modeling gates
+# class modeling gates in the intermediate representation
 class Gate(ABC):
     def __init__(self) -> None:
         super().__init__()
 
 
-# Class modeling single qubit gates
 class SingleQubitGate(Gate):
     def __init__(self) -> None:
         super().__init__()
 
 
-# Class modeling double qubit gates
 class DoubleQubitGate(Gate):
     def __init__(
         self,
@@ -31,7 +29,6 @@ class DoubleQubitGate(Gate):
     ) -> None:
         super().__init__()
 
-        # Check if the given orientation is correct
         if orientation is not None:
             assert (
                 orientation == Orientation.HORIZONTAL
@@ -39,13 +36,11 @@ class DoubleQubitGate(Gate):
                 else Orientation.VERTICAL
             )
 
-        # Set the orientation
         self._orientation = (
             Orientation.HORIZONTAL if q1 == q2 + 1 else Orientation.VERTICAL
         )  # TODO: check if this is correct in all cases
 
 
-# Class modeling Z gates
 class Z(SingleQubitGate):
     def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
         super().__init__()
@@ -53,7 +48,6 @@ class Z(SingleQubitGate):
         qis.z(mod.qubits[q])
 
 
-# Class modeling X gates
 class X(SingleQubitGate):
     def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
         super().__init__()
@@ -61,7 +55,6 @@ class X(SingleQubitGate):
         qis.x(mod.qubits[q])
 
 
-# Class modeling the preparation of X states
 class PrepareX(SingleQubitGate):
     def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
         super().__init__()
@@ -70,7 +63,6 @@ class PrepareX(SingleQubitGate):
         qis.h(mod.qubits[q])
 
 
-# Class modeling the preparation of Z states
 class PrepareZ(SingleQubitGate):
     def __init__(self, mod: SimpleModule, qis: BasicQisBuilder, q: int) -> None:
         super().__init__()
@@ -78,7 +70,6 @@ class PrepareZ(SingleQubitGate):
         qis.reset(mod.qubits[q])
 
 
-# Class modeling the preparation of Bell states
 class PrepareBB(DoubleQubitGate):
     def __init__(
         self, mod: SimpleModule, qis: BasicQisBuilder, q1: int, q2: int, q_ancilla: int
@@ -102,7 +93,6 @@ class PrepareBB(DoubleQubitGate):
             qis.if_result(mod.results[q_ancilla], lambda: X(mod, qis, q2))
 
 
-# Class modeling Z measurements
 class MeasureZ(SingleQubitGate):
     def __init__(
         self, mod: SimpleModule, qis: BasicQisBuilder, q: int, r: int = None
@@ -115,7 +105,6 @@ class MeasureZ(SingleQubitGate):
         qis.mz(mod.qubits[q], mod.results[r])
 
 
-# Class modeling X measurements
 class MeasureX(SingleQubitGate):
     def __init__(
         self, mod: SimpleModule, qis: BasicQisBuilder, q: int, r: int = None
@@ -129,8 +118,7 @@ class MeasureX(SingleQubitGate):
         qis.mz(mod.qubits[q], mod.results[r])
 
 
-# Class modeling joint ZZ measurements, vertical only!
-class MeasureZZ(DoubleQubitGate):
+class MeasureZZ(DoubleQubitGate):  # Vertical only
     def __init__(
         self,
         mod: SimpleModule,
@@ -153,8 +141,7 @@ class MeasureZZ(DoubleQubitGate):
         qis.mz(mod.qubits[q_ancilla], mod.results[r])
 
 
-# Class modeling joint XX measurements, horizontal only!
-class MeasureXX(DoubleQubitGate):
+class MeasureXX(DoubleQubitGate):  # Horizontal only
     def __init__(
         self,
         mod: SimpleModule,
@@ -180,7 +167,6 @@ class MeasureXX(DoubleQubitGate):
         qis.h(mod.qubits[q2])
 
 
-# Class modeling Bell measurements
 class MeasureBB(DoubleQubitGate):
     def __init__(
         self,
@@ -190,25 +176,25 @@ class MeasureBB(DoubleQubitGate):
         q2: int,
         q_ancilla: int,
         r1: int = None,
-        r21: int = None,
-        r22: int = None,
+        r2: int = None,
     ) -> None:
         super().__init__(q1, q2)
 
         if self._orientation == Orientation.HORIZONTAL:
             MeasureXX(mod, qis, q1, q2, q_ancilla, r1)
 
-            MeasureZ(mod, qis, q1, r21)
-            MeasureZ(mod, qis, q2, r22)
+            MeasureZ(mod, qis, q1, r2)
+            MeasureZ(mod, qis, q2, q_ancilla)
 
         else:  # Vertical
             MeasureZZ(mod, qis, q1, q2, q_ancilla, r1)
 
-            MeasureX(mod, qis, q1, r21)
-            MeasureX(mod, qis, q2, r22)
+            MeasureX(mod, qis, q1, r2)
+            MeasureX(mod, qis, q2, q_ancilla)
+
+        # mod.results[r2] = mod.builder.xor(mod.results[r2], mod.results[q_ancilla]) # TODO: xor
 
 
-# Class modeling move gates
 class Move(DoubleQubitGate):
     def __init__(
         self, mod: SimpleModule, qis: BasicQisBuilder, frm: int, to: int, q_ancilla: int

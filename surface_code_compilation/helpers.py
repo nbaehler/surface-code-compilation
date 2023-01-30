@@ -16,13 +16,16 @@ def is_data_qubit(i: tuple[int, int]) -> bool:
     return i[0] % 2 == 1 and i[1] % 2 == 1
 
 
-def change_coordinate(row: int) -> str:
+# Compute the equivalent letter for a given row index
+def compute_equivalent_letter(row: int) -> str:
     times = row // 26 + 1
     char = chr((row % 26) + 65)
     return char * times
 
 
-def make_runnable(mod: SimpleModule) -> None:
+# Append a call to the dump machine function which allows the qir-runner to dump
+# the state at the end of the simulation
+def append_dump_machine(mod: SimpleModule) -> None:
     i8p = PointerType(IntType(mod.context, 8))
 
     dump_machine = mod.add_external_function(
