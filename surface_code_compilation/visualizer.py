@@ -28,11 +28,16 @@ class Visualizer:
 
         for ax, epoch in enumerate(self._scheduling):
             # Setup
-            axs[ax].set_title(f"Epoch {ax + 1}", y=1.08)
+            axs[ax].set_title(
+                f"Epoch {ax + 1}", y=1.08
+            )  # TODO not always a new epoch, phase as well
             axs[ax].set_axis_off()
             axs[ax].set_aspect("equal")
 
             table = Table(axs[ax])
+
+            # table.auto_set_font_size(False) # TODO check font size
+            # table.set_fontsize(10)
 
             # Add the white/grey/black cells of the basic grid
             for i in range(n_rows):

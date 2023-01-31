@@ -215,7 +215,7 @@ dependencies:
       - msal-extensions==1.0.0
       - multidict==6.0.2
       - numpy==1.23.3
-      - pip==22.2.2
+      - pip==23.0
       - pluggy==1.0.0
       - portalocker==2.5.1
       - protobuf==3.20.2

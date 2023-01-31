@@ -1,5 +1,6 @@
 from abc import abstractmethod
 
+
 # Class representing nodes in the operator graph
 class Vertex:
     def __init__(self) -> None:

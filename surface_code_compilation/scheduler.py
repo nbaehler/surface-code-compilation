@@ -97,6 +97,10 @@ class EDPC(Scheduler):
         # Assign color IDs to the paths
         assign_color_ids(scheduling)
 
+        # Contains at least one empty epoch
+        if not scheduling:
+            scheduling = [[]]
+
         return scheduling
 
     # Compute edge disjoint operator sets

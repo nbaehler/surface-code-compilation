@@ -335,6 +335,9 @@ class Compiler:
         # Bell chain
         xs, zs = self._bell_chain(path, 0, len(path) - 2)
 
+        # TODO compute "xor" directly here, those results might get overwritten
+        # in the meantime
+
         # Measure XX
         q1 = self._get_q(path[-2])
         q2 = self._get_q(path[-1])
