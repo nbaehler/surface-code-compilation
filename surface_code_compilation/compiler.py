@@ -79,13 +79,13 @@ class Compiler:
         q1 = self._get_q(path[0])
         q2 = self._get_q(path[1])
         b = self._r[0]
-        MeasureZZ(self._mod, self._qis, q1, q2, self._q_ancilla, b)
+        MeasureZZ(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims, b)
 
         # Measure XX => a
         q1 = self._get_q(path[-2])
         q2 = self._get_q(path[-1])
         a = self._r[1]
-        MeasureXX(self._mod, self._qis, q1, q2, self._q_ancilla, a)
+        MeasureXX(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims, a)
 
         # Measure X => c
         q = self._get_q(path[1])
@@ -157,7 +157,7 @@ class Compiler:
         for i in r_prep:
             q1 = self._get_q(path[i])
             q2 = self._get_q(path[i + 1])
-            PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla)
+            PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
         xs: list[int] = []
         zs: list[int] = []
@@ -168,13 +168,7 @@ class Compiler:
             q2 = self._get_q(path[i + 1])
             xs.append(q1)
             zs.append(q2)
-            MeasureBB(
-                self._mod,
-                self._qis,
-                q1,
-                q2,
-                self._q_ancilla,
-            )
+            MeasureBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
         return xs, zs
 
@@ -184,13 +178,13 @@ class Compiler:
         # Prepare BB at start
         q1 = self._get_q(path[0])
         q2 = self._get_q(path[1])
-        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla)
+        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
         if len(path) > 3:
             # Prepare BB at end
             q1 = self._get_q(path[-3])
             q2 = self._get_q(path[-2])
-            PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla)
+            PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
             # Bell chain
             xs, zs = self._bell_chain(path, 1, len(path) - 3)
@@ -198,7 +192,7 @@ class Compiler:
         # Move
         frm = self._get_q(path[-2])
         to = self._get_q(path[-1])
-        Move(self._mod, self._qis, frm, to, self._q_ancilla)
+        Move(self._mod, self._qis, frm, to, self._q_ancilla, self._grid_dims)
 
         if len(path) > 3:
             q = self._get_q(path[-1])
@@ -223,7 +217,7 @@ class Compiler:
             *path[-1], self._grid_dims
         )  # TODO is the direction of the move correct, strange in paper?
         to = self._get_q(path[-2])
-        Move(self._mod, self._qis, frm, to, self._q_ancilla)
+        Move(self._mod, self._qis, frm, to, self._q_ancilla, self._grid_dims)
 
         # Bell chain
         return self._bell_chain(path, 0, len(path) - 2)
@@ -238,12 +232,14 @@ class Compiler:
         q1 = self._get_q(path[0])
         q2 = self._get_q(path[1])
         z_joint = self._r[0]
-        MeasureZZ(self._mod, self._qis, q1, q2, self._q_ancilla, z_joint)
+        MeasureZZ(
+            self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims, z_joint
+        )
 
         # Prepare BB at end
         q1 = self._get_q(path[-2])
         q2 = self._get_q(path[-1])
-        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla)
+        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
         # Bell chain
         xs, zs = self._bell_chain(path, 1, len(path) - 2)
@@ -272,12 +268,14 @@ class Compiler:
         q1 = self._get_q(path[-2])
         q2 = self._get_q(path[-1])
         x_joint = self._r[0]
-        MeasureXX(self._mod, self._qis, q1, q2, self._q_ancilla, x_joint)
+        MeasureXX(
+            self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims, x_joint
+        )
 
         # Prepare BB at start
         q1 = self._get_q(path[0])
         q2 = self._get_q(path[1])
-        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla)
+        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
         # Bell chain
         xs, zs = self._bell_chain(path, 1, len(path) - 2)
@@ -301,7 +299,7 @@ class Compiler:
         # Prepare BB at start
         q1 = self._get_q(path[1])
         q2 = self._get_q(path[2])
-        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla)
+        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
         # Bell chain
         xs, zs = self._bell_chain(path, 2, len(path) - 2)
@@ -310,7 +308,9 @@ class Compiler:
         q1 = self._get_q(path[0])
         q2 = self._get_q(path[1])
         z_joint = self._r[2]
-        MeasureZZ(self._mod, self._qis, q1, q2, self._q_ancilla, z_joint)
+        MeasureZZ(
+            self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims, z_joint
+        )
 
         # Measure X
         q = self._get_q(path[1])
@@ -330,19 +330,18 @@ class Compiler:
         # Prepare BB at end
         q1 = self._get_q(path[-3])
         q2 = self._get_q(path[-2])
-        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla)
+        PrepareBB(self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims)
 
         # Bell chain
         xs, zs = self._bell_chain(path, 0, len(path) - 2)
-
-        # TODO compute "xor" directly here, those results might get overwritten
-        # in the meantime
 
         # Measure XX
         q1 = self._get_q(path[-2])
         q2 = self._get_q(path[-1])
         x_joint = self._r[2]
-        MeasureXX(self._mod, self._qis, q1, q2, self._q_ancilla, x_joint)
+        MeasureXX(
+            self._mod, self._qis, q1, q2, self._q_ancilla, self._grid_dims, x_joint
+        )
 
         # Measure Z
         q = self._get_q(path[-2])

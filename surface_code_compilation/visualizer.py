@@ -1,4 +1,3 @@
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from helpers import compute_equivalent_letter, is_data_qubit
 from matplotlib.table import Table
@@ -15,35 +14,34 @@ class Visualizer:
         self._scheduling: list[list[Path]] = scheduling
 
     def visualize(self):
-        _, axs = plt.subplots(1, len(self._scheduling))
+        epochs = len(self._scheduling)
+
+        _, axs = plt.subplots(1, epochs, figsize=(20, 20 * epochs))
 
         # Scheduling only contains one epoch
-        if len(self._scheduling) == 1:
+        if epochs == 1:
             axs = [axs]
 
         # Setup
-        colors = list(mcolors.TABLEAU_COLORS)
         n_rows, n_cols = self._grid_dims
         size = 1.0 / n_cols if n_cols >= n_rows else 1.0 / n_rows
 
         for ax, epoch in enumerate(self._scheduling):
             # Setup
-            axs[ax].set_title(
-                f"Epoch {ax + 1}", y=1.08
-            )  # TODO not always a new epoch, phase as well
+            axs[ax].set_title(f"Phase {ax + 1}", y=1.08)
             axs[ax].set_axis_off()
             axs[ax].set_aspect("equal")
 
             table = Table(axs[ax])
 
-            # table.auto_set_font_size(False) # TODO check font size
-            # table.set_fontsize(10)
+            table.auto_set_font_size(False)
+            table.set_fontsize(10)
 
             # Add the white/grey/black cells of the basic grid
             for i in range(n_rows):
                 for j in range(n_cols):
                     if i % 2 == 0 and j % 2 == 0:
-                        color = "grey"
+                        color = "lightgrey"
                     elif i % 2 == 1 and j % 2 == 1:
                         color = "black"
                     else:
@@ -66,7 +64,7 @@ class Visualizer:
                         *qubit,
                         size,
                         size,
-                        facecolor=colors[path.get_color_id() % len(colors)],
+                        facecolor=f"C{path.get_color_id()}",
                         text=text,
                         loc="center",
                     )

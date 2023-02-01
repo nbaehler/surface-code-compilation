@@ -38,7 +38,7 @@ class DoubleQubitGate(Gate):
 
         self._orientation = (
             Orientation.HORIZONTAL if q1 == q2 + 1 else Orientation.VERTICAL
-        )  # TODO: check if this is correct in all cases
+        )
 
 
 class Z(SingleQubitGate):

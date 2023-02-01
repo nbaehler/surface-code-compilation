@@ -9,10 +9,15 @@ class Logger(GateSet):
         self.instructions: list[tuple[int, int]] = []
 
     def cx(self, control: str, target: str) -> None:
+        if control == target:
+            raise ValueError(
+                f"Control and target qubit must be different (control qubit[{control}], target qubit[{target}])!"
+            )
+
         self.instructions.append((int(control), int(target)))
 
     def cz(self, control: str, target: str) -> None:
-        print(f"Ignored: cz qubit[{control}], qubit[{target}]")
+        print(f"Ignored: cz control qubit[{control}], target qubit[{target}]")
 
     def h(self, target: str) -> None:
         print(f"Ignored: h qubit[{target}]")

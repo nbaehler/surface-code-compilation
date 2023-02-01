@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
+
 from helpers import unflatten
 from operator_graph import OperatorGraph
 from path import DirectKeyPath, PaperKeyPath, Path, PathType
@@ -60,6 +61,9 @@ class EDPC(Scheduler):
         # operator EDP sets
         operator_edp_sets = self.__compute_operator_edp_sets()
 
+        # Assign color IDs to the paths
+        assign_color_ids(operator_edp_sets)
+
         # Split operator EDP sets into operator VDP sets
         q1 = []
         for operator_edp_set in operator_edp_sets:
@@ -91,11 +95,11 @@ class EDPC(Scheduler):
 
             q2.append(p_star)
 
+        # Assign color IDs to the paths
+        assign_color_ids(q2)
+
         # Pick the shorter scheduling of both approaches
         scheduling = q1 if len(q1) <= len(q2) else q2
-
-        # Assign color IDs to the paths
-        assign_color_ids(scheduling)
 
         # Contains at least one empty epoch
         if not scheduling:
@@ -113,15 +117,15 @@ class EDPC(Scheduler):
         operator_edp_sets = [[]]
         for (
             current_path
-        ) in paths:  # TODO use graph coloring instead, this is inefficient
+        ) in paths:  # Paper suggests to use graph coloring instead, this is brute force
             added = False
 
             # Check if the current path is edge disjoint with all of the paths
             # of any of existing operator EDP sets and that no terminals are shared
             for operator_edp_set in operator_edp_sets:
                 conflict = any(
-                    not current_path.is_edge_disjoint(set_path)
-                    or not current_path.is_terminal_disjoint(set_path)
+                    not current_path.is_terminal_disjoint(set_path)
+                    or not current_path.is_edge_disjoint(set_path)
                     for set_path in operator_edp_set
                 )
 
@@ -133,7 +137,7 @@ class EDPC(Scheduler):
                     break
 
             # If the current path couldn't be added to any of the existing
-            # operator sets, create a new operator set
+            # operator sets, append a new operator set at the end
             if not added:
                 operator_edp_sets.append([current_path])
 
@@ -145,31 +149,35 @@ class EDPC(Scheduler):
         self,
         operator_edp_set: list[Path],
     ) -> tuple[list[Path], list[Path]]:
-        paths = operator_edp_set
-
         # For each path pair check if they are vertex disjoint
         paths_to_split_idx = {}
-        for i in range(len(paths)):
-            for j in range(i + 1, len(paths)):
-                if current_crossing_vertices := paths[i].crossing_vertices(paths[j]):
-                    if i not in paths_to_split_idx:
-                        paths_to_split_idx[i] = set(current_crossing_vertices)
-                    else:
+        for i in range(len(operator_edp_set)):
+            for j in range(i + 1, len(operator_edp_set)):
+                current_crossing_vertices = operator_edp_set[i].crossing_vertices(
+                    operator_edp_set[j]
+                )
+
+                if current_crossing_vertices != set():
+                    if i in paths_to_split_idx:
                         paths_to_split_idx[i].update(
                             paths_to_split_idx[i].union(current_crossing_vertices)
                         )
+                    else:
+                        paths_to_split_idx[i] = set(current_crossing_vertices)
 
         vertex_disjoint_path_idx = [
-            i for i in range(len(paths)) if i not in paths_to_split_idx
+            i for i in range(len(operator_edp_set)) if i not in paths_to_split_idx
         ]
 
         return (
             # When the operator EDP set is not vertex disjoint, fragment it into
             # two operator VDP sets
-            self.__fragment_edp_set(paths, vertex_disjoint_path_idx, paths_to_split_idx)
+            self.__fragment_edp_set(
+                operator_edp_set, vertex_disjoint_path_idx, paths_to_split_idx
+            )
             if paths_to_split_idx != {}
             # Otherwise return the EDP set as is (because it's VDP as well), the empty second phase will be discarded
-            else (paths, [])
+            else (operator_edp_set, [])
         )
 
     # Given the intersecting paths, fragment the operator EDP set into two
@@ -183,50 +191,45 @@ class EDPC(Scheduler):
         # Assign all vertex disjoint paths to the first phase
         p1, p2 = [paths[i] for i in vertex_disjoint_path_idx], []
 
-        for i, vertices in paths_to_split_idx.items():
+        for i, crossing_vertices in paths_to_split_idx.items():
             current_path = paths[i]
-            phase = []
+            phases = [1] * len(current_path)
 
             for j, vertex in enumerate(current_path):
-                if vertex in vertices:
-                    phase[j - 1] = 2
-                    phase.extend((2, 2))
-                elif len(phase) == j:
-                    phase.append(1)
+                if vertex in crossing_vertices:
+                    assert j > 0 and j < len(current_path) - 1
+                    phases[j - 1] = 2
+                    phases[j] = 2
+                    phases[j + 1] = 2
 
-            current_phase = phase[0]
-            current_vertices = [current_path[0]]
-            for j in range(1, len(phase)):
-                if phase[j] == current_phase:
-                    current_vertices.append(current_path[j])
+            phases_1 = []
+            phases_2 = []
 
+            last = phases[0]
+            for j, p in enumerate(phases):
+                if p > last:
+                    phases_1.append(current_path[j])
+                    phases_2.append(current_path[j])
+                elif p < last:
+                    phases_1.extend((current_path[j - 1], current_path[j]))
+                elif p == 1:
+                    phases_1.append(current_path[j])
                 else:
-                    current_color_id = current_path.get_color_id()
-                    if current_phase == 1:
-                        current_vertices.append(current_path[j])
-                        path = Path(
-                            PathType.PHASE_1, current_path._color_id, current_vertices
-                        )
-                        path.set_color_id(current_color_id)
-                        p1.append(path)
-                    elif current_phase == 2:
-                        path = Path(
-                            PathType.PHASE_2, current_path._color_id, current_vertices
-                        )
-                        path.set_color_id(current_color_id)
-                        p2.append(path)
+                    phases_2.append(current_path[j])
 
-                    current_phase = phase[j]
-                    current_vertices = [current_path[j]]
+                last = p
+
             current_color_id = current_path.get_color_id()
-            if current_phase == 1:
-                path = Path(PathType.PHASE_1, current_path._color_id, current_vertices)
-                path.set_color_id(current_color_id)
-                p1.append(path)
-            elif current_phase == 2:
-                path = Path(PathType.PHASE_2, current_path._color_id, current_vertices)
-                path.set_color_id(current_color_id)
-                p2.append(path)
+
+            path = Path(PathType.PHASE_1, current_color_id, phases_1)
+            p1.append(path)
+
+            assert len(phases_1) > 1
+
+            path = Path(PathType.PHASE_2, current_color_id, phases_2)
+            p2.append(path)
+
+            assert len(phases_2) > 1
 
         return p1, p2
 
@@ -240,12 +243,11 @@ class EDPC(Scheduler):
         A: list[Path] = []
         # Remove duplicates, terminals can't be present twice (not just as pairs)
         unique_terminal_pairs = []
-        used = set()
+        used_terminals = []
         for pair in terminal_pairs:
-            if pair[0] not in used and pair[1] not in used:
+            if pair[0] not in used_terminals and pair[1] not in used_terminals:
                 unique_terminal_pairs.append(pair)
-                used.add(pair[0])
-                used.add(pair[1])
+                used_terminals.extend(pair)
 
         covered_terminal_pairs = []
         operator_graph._restore_initial_state()

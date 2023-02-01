@@ -18,8 +18,7 @@ class OperatorGraph:
 
         for i in range(self._grid_dims[0]):
             for j in range(self._grid_dims[1]):
-                # Is it an ancilla vertex?
-                if i % 2 == 0 or j % 2 == 0:
+                if i % 2 == 0 or j % 2 == 0:  # Is it an ancilla vertex?
                     self._operator_graph[i, j] = Ancilla((i, j), self._grid_dims)
                 else:
                     self._operator_graph[i, j] = Vertex()
@@ -28,7 +27,8 @@ class OperatorGraph:
     def _restore_initial_state(self) -> None:
         for i in range(self._grid_dims[0]):
             for j in range(self._grid_dims[1]):
-                self._operator_graph[i, j].restore_initial_neighbors()
+                if i % 2 == 0 or j % 2 == 0:
+                    self._operator_graph[i, j]._restore_neighbors()
 
     # Add a terminal pair to the operator graph
     def _add_terminal_pair(

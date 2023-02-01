@@ -1,6 +1,3 @@
-from abc import abstractmethod
-
-
 # Class representing nodes in the operator graph
 class Vertex:
     def __init__(self) -> None:
@@ -34,10 +31,6 @@ class Vertex:
     def remove_neighbor(self, vertex: tuple[int, int]) -> None:
         self._neighbors.remove(vertex)
 
-    @abstractmethod
-    def restore_initial_neighbors(self) -> None:
-        pass
-
 
 # Iterator over the neighbors of a vertex
 class NeighborsIterator:
@@ -60,10 +53,6 @@ class Start(Vertex):
         super().__init__()
 
         self._idx = idx
-        self._restore_initial_neighbors()
-
-    def _restore_initial_neighbors(self) -> None:
-        # Vertical neighbors only
         self.append_neighbor((self._idx[0] - 1, self._idx[1]))
         self.append_neighbor((self._idx[0] + 1, self._idx[1]))
 
@@ -74,10 +63,6 @@ class Stop(Vertex):
         super().__init__()
 
         self._idx = idx
-        self._restore_initial_neighbors()
-
-    def _restore_initial_neighbors(self) -> None:
-        # Horizontal neighbors only
         self.append_neighbor((self._idx[0], self._idx[1] - 1))
         self.append_neighbor((self._idx[0], self._idx[1] + 1))
 
@@ -90,9 +75,11 @@ class Ancilla(Vertex):
 
         self._idx = idx
         self._grid_dims = grid_dims
-        self._restore_initial_neighbors()
+        self._restore_neighbors()
 
-    def _restore_initial_neighbors(self) -> None:
+    def _restore_neighbors(self) -> None:
+        self._neighbors = []
+
         # Initialize neighbors while checking for border cases
         if self._idx[1] % 2 == 0:
             if self._idx[0] > 0:

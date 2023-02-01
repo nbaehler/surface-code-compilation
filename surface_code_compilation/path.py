@@ -69,8 +69,8 @@ class Path:
         second = other._vertices
 
         # Check if any pair of edges are equal
-        e1 = {tuple(first[i : i + 2]) for i in range(len(first) - 1)}
-        e2 = {tuple(second[i : i + 2]) for i in range(len(second) - 1)}
+        e1 = {(first[i], first[i + 1]) for i in range(len(first) - 1)}
+        e2 = {(second[i], second[i + 1]) for i in range(len(second) - 1)}
 
         return not e1.intersection(e2)
 
@@ -79,7 +79,12 @@ class Path:
         first = self._vertices
         second = other._vertices
 
-        return first[0] != second[0] and first[-1] != second[-1]
+        return (
+            first[0] != second[0]
+            and first[-1] != second[-1]
+            and first[0] != second[-1]
+            and first[-1] != second[0]
+        )
 
     # Getter for the type of the path
     def get_type(self) -> PathType:

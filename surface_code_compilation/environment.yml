@@ -26,8 +26,8 @@ dependencies:
   - brotli-bin=1.0.9=h5eee18b_7
   - brotlipy=0.7.0=py310h7f8727e_1002
   - bzip2=1.0.8=h7b6447c_0
-  - ca-certificates=2023.01.10=h06a4308_0
-  - certifi=2022.12.7=py310h06a4308_0
+  - ca-certificates=2022.12.7=ha878542_0
+  - certifi=2022.12.7=pyhd8ed1ab_0
   - cffi=1.15.1=py310h74dc2b5_0
   - charset-normalizer=2.0.4=pyhd3eb1b0_0
   - click=8.0.4=py310h06a4308_0
@@ -130,10 +130,11 @@ dependencies:
   - numpy-base=1.23.5=py310h8e6c178_0
   - oauthlib=3.2.0=pyhd3eb1b0_1
   - openssl=1.1.1s=h7f8727e_0
+  - ordered-set=4.1.0=pyhd8ed1ab_0
   - packaging=21.3=pyhd3eb1b0_0
   - pandocfilters=1.5.0=pyhd3eb1b0_0
   - parso=0.8.3=pyhd3eb1b0_0
-  - pathspec=0.10.3=py310h06a4308_0
+  - pathspec=0.9.0=py310h06a4308_0
   - pcre=8.45=h295c915_0
   - pexpect=4.8.0=pyhd3eb1b0_3
   - pickleshare=0.7.5=pyhd3eb1b0_1003

@@ -27,7 +27,7 @@ def main():
     append_dump_machine(mod)
 
     # Write llvm file that can be run by the qir-runner
-    with open(os.path.join(root_dir, "input.ll"), "wb") as f:
+    with open(os.path.join(root_dir, "qir/input.ll"), "wb") as f:
         f.write(mod.ir().encode("utf-8"))
         f.flush()
 
@@ -49,15 +49,18 @@ def main():
     scheduling = scheduling_strategy(grid_dims, cnots, mapping).schedule()
 
     scheduling_str = ",\n".join(
-        [", ".join([str(path) for path in phase]) for phase in scheduling]
+        [
+            ",\n".join([f"{i+1}.{j+1} {path}" for j, path in enumerate(phase)])
+            for i, phase in enumerate(scheduling)
+        ]
     )
-    print(f"Scheduling: [{scheduling_str}]")
+    print(f"Scheduling: (phase.path)\n{scheduling_str}")
 
     # Compile the scheduled CNOTs into QIR
     out_qir = Compiler(grid_dims, scheduling).compile()
 
     # Write the output QIR
-    with open(os.path.join(root_dir, "output.ll"), "wb") as f:
+    with open(os.path.join(root_dir, "qir/output.ll"), "wb") as f:
         f.write(out_qir.encode("utf-8"))
         f.flush()
 

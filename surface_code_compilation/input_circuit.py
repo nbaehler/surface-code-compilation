@@ -23,4 +23,19 @@ def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:
     qis.cx(mod.qubits[flatten(1, 7, grid_dims)], mod.qubits[flatten(1, 3, grid_dims)])
     qis.cx(mod.qubits[flatten(5, 7, grid_dims)], mod.qubits[flatten(5, 5, grid_dims)])
 
+    qis.cx(mod.qubits[flatten(1, 1, grid_dims)], mod.qubits[flatten(7, 7, grid_dims)])
+    qis.cx(mod.qubits[flatten(7, 1, grid_dims)], mod.qubits[flatten(3, 5, grid_dims)])
+    qis.cx(mod.qubits[flatten(3, 5, grid_dims)], mod.qubits[flatten(5, 5, grid_dims)])
+    qis.cx(mod.qubits[flatten(1, 5, grid_dims)], mod.qubits[flatten(7, 3, grid_dims)])
+    qis.cx(mod.qubits[flatten(5, 7, grid_dims)], mod.qubits[flatten(5, 5, grid_dims)])
+
+    qis.cx(mod.qubits[flatten(7, 3, grid_dims)], mod.qubits[flatten(3, 7, grid_dims)])
+    qis.cx(mod.qubits[flatten(3, 1, grid_dims)], mod.qubits[flatten(3, 3, grid_dims)])
+    qis.cx(mod.qubits[flatten(5, 7, grid_dims)], mod.qubits[flatten(5, 3, grid_dims)])
+    qis.cx(mod.qubits[flatten(1, 3, grid_dims)], mod.qubits[flatten(7, 5, grid_dims)])
+    qis.cx(mod.qubits[flatten(5, 1, grid_dims)], mod.qubits[flatten(1, 1, grid_dims)])
+
+    qis.cx(mod.qubits[flatten(1, 3, grid_dims)], mod.qubits[flatten(7, 3, grid_dims)])
+    qis.cx(mod.qubits[flatten(3, 1, grid_dims)], mod.qubits[flatten(3, 7, grid_dims)])
+
     return mod, grid_dims
