@@ -16,6 +16,8 @@ from helpers import flatten, is_data_qubit, append_dump_machine
 from path import Path, PathType
 from pyqir import BasicQisBuilder, SimpleModule
 
+# TODO There is a bug in the compiler, compare simulation results
+# TODO Find a way to compute xor between measurement results
 
 # Class the compiles a scheduling into qir
 class Compiler:
@@ -215,7 +217,7 @@ class Compiler:
         # Move
         frm = flatten(
             *path[-1], self._grid_dims
-        )  # TODO is the direction of the move correct, strange in paper?
+        )  # TODO Is the direction of the move correct, strange in paper?
         to = self._get_q(path[-2])
         Move(self._mod, self._qis, frm, to, self._q_ancilla, self._grid_dims)
 
@@ -320,7 +322,9 @@ class Compiler:
         # Z
         q = self._get_q(path[0])
 
-        for a in xs + [x] + zs + [z_joint]:
+        for a in (
+            xs + [x] + zs + [z_joint]
+        ):  # TODO Paper contains a mistake here, not sure if this is correct
             self._qis.if_result(
                 self._mod.results[a], lambda: Z(self._mod, self._qis, q)
             )
@@ -351,7 +355,9 @@ class Compiler:
         # X
         q = self._get_q(path[-1])
 
-        for a in xs + [x_joint] + zs + [z]:
+        for a in (
+            xs + [x_joint] + zs + [z]
+        ):  # TODO Paper contains a mistake here, not sure if this is correct
             self._qis.if_result(
                 self._mod.results[a], lambda: X(self._mod, self._qis, q)
             )

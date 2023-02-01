@@ -57,7 +57,7 @@ class Sequential(Scheduler):
 # Scheduler that is based on the paper
 class EDPC(Scheduler):
     def schedule(self):
-        # First approach, using the paper's novel algorithm. compute the
+        # First approach, using the paper's novel algorithm, compute the
         # operator EDP sets
         operator_edp_sets = self.__compute_operator_edp_sets()
 
@@ -99,7 +99,12 @@ class EDPC(Scheduler):
         assign_color_ids(q2)
 
         # Pick the shorter scheduling of both approaches
-        scheduling = q1 if len(q1) <= len(q2) else q2
+        if len(q1) <= len(q2):
+            print(f"Using paper approach: len(q1)={len(q1)} vs len(q2)={len(q2)}")
+            scheduling = q1
+        else:
+            print(f"Using greedy approach: len(q1)={len(q1)} vs len(q2)={len(q2)}")
+            scheduling = q2
 
         # Contains at least one empty epoch
         if not scheduling:
@@ -108,16 +113,14 @@ class EDPC(Scheduler):
         return scheduling
 
     # Compute edge disjoint operator sets
-    def __compute_operator_edp_sets(
+    def __compute_operator_edp_sets(  # TODO Paper suggest to use graph coloring instead, this is just brute force
         self,
     ) -> list[list[Path]]:
         paths = [PaperKeyPath(ctrl, tgt).extend_to_path() for ctrl, tgt in self._cnots]
 
         # Construct operator EDP sets
         operator_edp_sets = [[]]
-        for (
-            current_path
-        ) in paths:  # Paper suggests to use graph coloring instead, this is brute force
+        for current_path in paths:
             added = False
 
             # Check if the current path is edge disjoint with all of the paths
@@ -165,36 +168,38 @@ class EDPC(Scheduler):
                     else:
                         paths_to_split_idx[i] = set(current_crossing_vertices)
 
-        vertex_disjoint_path_idx = [
-            i for i in range(len(operator_edp_set)) if i not in paths_to_split_idx
-        ]
-
         return (
             # When the operator EDP set is not vertex disjoint, fragment it into
             # two operator VDP sets
-            self.__fragment_edp_set(
-                operator_edp_set, vertex_disjoint_path_idx, paths_to_split_idx
-            )
+            self.__fragment_edp_set(operator_edp_set, paths_to_split_idx)
             if paths_to_split_idx != {}
-            # Otherwise return the EDP set as is (because it's VDP as well), the empty second phase will be discarded
+            # Otherwise return the EDP set as is (because it's VDP as well), the
+            # empty second phase will be discarded
             else (operator_edp_set, [])
         )
 
-    # Given the intersecting paths, fragment the operator EDP set into two
-    # operator VDP sets
-    def __fragment_edp_set(  # TODO add good comments/documentation
+    # Given the intersecting paths and the crossing vertices, fragment the
+    # operator EDP set into two operator VDP sets
+    def __fragment_edp_set(
         self,
         paths: list[Path],
-        vertex_disjoint_path_idx: list[int],
         paths_to_split_idx: dict[int, set[tuple[int, int]]],
     ) -> tuple[list[Path], list[Path]]:
+        # Compute the vertex disjoint paths
+        vertex_disjoint_path_idx = [
+            i for i in range(len(paths)) if i not in paths_to_split_idx
+        ]
+
         # Assign all vertex disjoint paths to the first phase
         p1, p2 = [paths[i] for i in vertex_disjoint_path_idx], []
 
+        # Split the remaining paths into two phases
         for i, crossing_vertices in paths_to_split_idx.items():
             current_path = paths[i]
             phases = [1] * len(current_path)
 
+            # Match up the crossing vertices to the second phase with the
+            # required vertex before and after the crossing vertex itself
             for j, vertex in enumerate(current_path):
                 if vertex in crossing_vertices:
                     assert j > 0 and j < len(current_path) - 1
@@ -205,20 +210,27 @@ class EDPC(Scheduler):
             phases_1 = []
             phases_2 = []
 
+            # Attribute the vertices to the phases
             last = phases[0]
             for j, p in enumerate(phases):
+                # Transition from phase 1 to phase 2
                 if p > last:
                     phases_1.append(current_path[j])
                     phases_2.append(current_path[j])
+                # Transition from phase 2 to phase 1
                 elif p < last:
                     phases_1.extend((current_path[j - 1], current_path[j]))
+                # Stay in the phase 1
                 elif p == 1:
                     phases_1.append(current_path[j])
+                # Stay in the phase 2
                 else:
                     phases_2.append(current_path[j])
 
                 last = p
 
+            # Create two new paths for the two phases while maintaining the same
+            # color id
             current_color_id = current_path.get_color_id()
 
             path = Path(PathType.PHASE_1, current_color_id, phases_1)
