@@ -12,11 +12,10 @@ from gate import (
     X,
     Z,
 )
-from helpers import flatten, is_data_qubit, append_dump_machine
+from helpers import append_dump_machine, flatten, is_data_qubit
 from path import Path, PathType
 from pyqir import BasicQisBuilder, SimpleModule
 
-# TODO There is a bug in the compiler, compare simulation results
 # TODO Find a way to compute xor between measurement results
 
 # Class the compiles a scheduling into qir
@@ -297,7 +296,9 @@ class Compiler:
             )
 
     # Compile a long range teleportation with ZZ measurement. Path length is always even
-    def _long_range_teleport_with_ZZ_meas(self, path: Path) -> None:
+    def _long_range_teleport_with_ZZ_meas(
+        self, path: Path
+    ) -> None:  # TODO BUG: some of those measurement results must be shared with the other teleportation!
         # Prepare BB at start
         q1 = self._get_q(path[1])
         q2 = self._get_q(path[2])
@@ -322,15 +323,15 @@ class Compiler:
         # Z
         q = self._get_q(path[0])
 
-        for a in (
-            xs + [x] + zs + [z_joint]
-        ):  # TODO Paper contains a mistake here, not sure if this is correct
+        for a in xs + [x] + zs + [z_joint]:
             self._qis.if_result(
                 self._mod.results[a], lambda: Z(self._mod, self._qis, q)
             )
 
     # Compile a long range teleportation with XX measurement. Path length is always even
-    def _long_range_teleport_with_XX_meas(self, path: Path) -> None:
+    def _long_range_teleport_with_XX_meas(
+        self, path: Path
+    ) -> None:  # TODO BUG: some of those measurement results must be shared with the other teleportation!
         # Prepare BB at end
         q1 = self._get_q(path[-3])
         q2 = self._get_q(path[-2])
@@ -355,9 +356,7 @@ class Compiler:
         # X
         q = self._get_q(path[-1])
 
-        for a in (
-            xs + [x_joint] + zs + [z]
-        ):  # TODO Paper contains a mistake here, not sure if this is correct
+        for a in xs + [x_joint] + zs + [z]:
             self._qis.if_result(
                 self._mod.results[a], lambda: X(self._mod, self._qis, q)
             )

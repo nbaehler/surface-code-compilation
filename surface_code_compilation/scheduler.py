@@ -160,6 +160,7 @@ class EDPC(Scheduler):
                     operator_edp_set[j]
                 )
 
+                # If not, keep track of the path and the crossing vertices
                 if current_crossing_vertices != set():
                     if i in paths_to_split_idx:
                         paths_to_split_idx[i].update(
@@ -292,7 +293,7 @@ class EDPC(Scheduler):
 
     # Compute the shortest path between any terminal pair possible in the
     # operator graph
-    def __compute_minimal_length_shortest_path_between_terminal_pairs(
+    def __compute_minimal_length_shortest_path_between_terminal_pairs(  # TODO the paper suggests to use Dijkstra's algorithm instead of BFS
         self,
         operator_graph: OperatorGraph,
         terminal_pairs: list[tuple[tuple[int, int], tuple[int, int]]],

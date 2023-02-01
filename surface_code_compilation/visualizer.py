@@ -16,7 +16,7 @@ class Visualizer:
     def visualize(self):
         epochs = len(self._scheduling)
 
-        _, axs = plt.subplots(1, epochs, figsize=(20, 20 * epochs))
+        _, axs = plt.subplots(1, epochs, figsize=(10, 10 * epochs))
 
         # Scheduling only contains one epoch
         if epochs == 1:
