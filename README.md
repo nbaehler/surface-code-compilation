@@ -7,7 +7,7 @@ Professor: Prof. [Giovanni De
 Micheli](https://people.epfl.ch/giovanni.demicheli/?lang=en)\
 Supervisor: [Mathias Soeken](https://people.epfl.ch/mathias.soeken?lang=en),
 Ph.D.\
-Student: [Nicolas Bähler](https://people.epfl.ch/nicolas.bahler?lang=en)\
+Student: [Nicolas Bähler](https://people.epfl.ch/nicolas.bahler?lang=en)
 
 The semester project is mainly based on [this
 paper](https://arxiv.org/pdf/2110.11493.pdf). First, it
