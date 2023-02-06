@@ -1,5 +1,5 @@
 #!/bin/bash
 
 cd qir-runner
-cargo run ../qir/input.ll
-cargo run ../qir/output.ll
+cargo run -- --file ../qir/input.ll
+cargo run -- --file ../qir/output.ll
