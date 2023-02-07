@@ -4,7 +4,7 @@ import tempfile
 from compiler import Compiler
 from helpers import append_dump_machine
 from input_circuit import input_circuit
-from mapper import Identity, PaperIdentity, PaperRenaming, Renaming
+from mapper import Identity, Renaming
 from qir_parser import parse_qir
 from scheduler import EDPC, Sequential
 from visualizer import Visualizer
@@ -23,6 +23,10 @@ def main():
         f.flush()
         cnots = parse_qir(f.name)
 
+    print("Infos:")
+    print("CNOTs: (control, target)")
+    print(cnots)
+
     # Append dump machine to the end of the circuit
     append_dump_machine(mod)
 
@@ -32,29 +36,33 @@ def main():
         f.flush()
 
     # Select strategies
-    # mapping_strategy, scheduling_strategy = Identity, Sequential
-    # mapping_strategy, scheduling_strategy = Renaming, Sequential
-    mapping_strategy, scheduling_strategy = PaperIdentity, EDPC
-    # mapping_strategy, scheduling_strategy = PaperRenaming, EDPC
-
-    print("Infos:")
+    mapping_strategy = Identity
+    # mapping_strategy = Renaming
+    # scheduling_strategy = Sequential
+    scheduling_strategy = EDPC
 
     # Map the qubits according to strategy
-    (n_qubits, mapping, grid_dims) = mapping_strategy(grid_dims, cnots).map()
+    n_qubits, mapping, grid_dims = mapping_strategy(grid_dims, cnots).map()
 
     print(f"Number of qubits used: {n_qubits}")
     print(f"Mapping of qubits: {mapping}")
 
+    # Map the CNOTs according to the mapping
+    mapped_cnots = [tuple(mapping[qubit] for qubit in cnot) for cnot in cnots]
+
+    print("Mapped CNOTs: (control, target)")
+    print(mapped_cnots)
+
     # Schedule the CNOTs according to strategy
-    scheduling = scheduling_strategy(grid_dims, cnots, mapping).schedule()
+    scheduling = scheduling_strategy(grid_dims, mapped_cnots).schedule()
 
     scheduling_str = ",\n".join(
         [
-            ",\n".join([f"{i+1}.{j+1} {path}" for j, path in enumerate(phase)])
+            ",\n".join([f"{i+1}.{j+1}: {path}" for j, path in enumerate(phase)])
             for i, phase in enumerate(scheduling)
         ]
     )
-    print(f"Scheduling: (phase.path)\n{scheduling_str}")
+    print(f"Scheduling: #phase.#path: [vertices]\n{scheduling_str}")
 
     # Compile the scheduled CNOTs into QIR
     out_qir = Compiler(grid_dims, scheduling).compile()

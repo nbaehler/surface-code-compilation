@@ -1,10 +1,8 @@
 from abc import ABC, abstractmethod
 
 import numpy as np
-
-from helpers import unflatten
 from operator_graph import OperatorGraph
-from path import DirectKeyPath, PaperKeyPath, Path, PathType
+from path import KeyPath, Path, PathType
 
 
 # Class modelling a scheduler for compilation
@@ -12,19 +10,11 @@ class Scheduler(ABC):
     def __init__(
         self,
         grid_dims: tuple[int, int],
-        cnots: list[tuple[int, int]],
-        mapping: dict[int, int],
+        cnots: list[tuple[tuple[int, int], tuple[int, int]]],
     ) -> None:
         super().__init__()
         self._grid_dims: tuple[int, int] = grid_dims
-        self._cnots: list[tuple[tuple[int, int], tuple[int, int]]] = []
-
-        # Translate the CNOTs to the grid
-        for cnot in cnots:
-            ctrl = unflatten(mapping[cnot[0]], self._grid_dims)
-            tgt = unflatten(mapping[cnot[1]], self._grid_dims)
-
-            self._cnots.append((ctrl, tgt))
+        self._cnots: list[tuple[tuple[int, int], tuple[int, int]]] = cnots
 
     @abstractmethod
     def schedule(self) -> list[list[Path]]:
@@ -46,7 +36,7 @@ def assign_color_ids(scheduling: list[list[Path]]) -> None:
 class Sequential(Scheduler):
     def schedule(self):
         scheduling = [
-            [DirectKeyPath(cnot[0], cnot[1]).extend_to_path()] for cnot in self._cnots
+            [KeyPath(cnot[0], cnot[1]).extend_to_path()] for cnot in self._cnots
         ]
 
         assign_color_ids(scheduling)
@@ -116,7 +106,7 @@ class EDPC(Scheduler):
     def __compute_operator_edp_sets(  # TODO Paper suggest to use graph coloring instead, this is just brute force
         self,
     ) -> list[list[Path]]:
-        paths = [PaperKeyPath(ctrl, tgt).extend_to_path() for ctrl, tgt in self._cnots]
+        paths = [KeyPath(ctrl, tgt).extend_to_path() for ctrl, tgt in self._cnots]
 
         # Construct operator EDP sets
         operator_edp_sets = [[]]

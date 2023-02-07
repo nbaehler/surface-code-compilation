@@ -1,10 +1,6 @@
 import numpy as np
-from pyqir import (
-    BasicQisBuilder,
-    SimpleModule,
-)
-
 from helpers import flatten
+from pyqir import BasicQisBuilder, SimpleModule
 
 
 def input_circuit() -> tuple[SimpleModule, tuple[int, int]]:

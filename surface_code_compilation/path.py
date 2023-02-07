@@ -122,9 +122,24 @@ class VertexIterator:
 
 
 # Class for paths that are denoted using only key vertices on that path
+# described in the paper
 class KeyPath(Path):
-    def __init__(self) -> None:
+    def __init__(self, start: tuple[int, int], stop: tuple[int, int]) -> None:
         super().__init__()
+
+        assert is_data_qubit(start)
+        assert is_data_qubit(stop)
+
+        start_r, start_c = start
+        stop_r, stop_c = stop
+
+        self._vertices = [  # They are not consistent in the paper, the use this path scheme in proofs but then use different ones in the graphics
+            (start_r, start_c),
+            (start_r - 1, start_c),
+            (start_r - 1, stop_c - 1),
+            (stop_r, stop_c - 1),
+            (stop_r, stop_c),
+        ]
 
     # Extend the KeyPath to a normal Path i.e. fill in the missing vertices
     def extend_to_path(self) -> Path:
@@ -148,72 +163,3 @@ class KeyPath(Path):
         path.append_vertex(self._vertices[4])
 
         return path
-
-
-# Class for KeyPaths that are described in the paper
-class PaperKeyPath(KeyPath):
-    def __init__(self, start: tuple[int, int], stop: tuple[int, int]) -> None:
-        super().__init__()
-
-        assert is_data_qubit(start)
-        assert is_data_qubit(stop)
-
-        start_r, start_c = start
-        stop_r, stop_c = stop
-
-        self._vertices = [  # They are not consistent in the paper, the use this path scheme in proofs but then use different ones in the graphics
-            (start_r, start_c),
-            (start_r - 1, start_c),
-            (start_r - 1, stop_c - 1),
-            (stop_r, stop_c - 1),
-            (stop_r, stop_c),
-        ]
-
-
-# Class for KeyPaths that are optimized in the sense that they are shorter than the paths described in the paper
-class DirectKeyPath(KeyPath):
-    def __init__(self, start: tuple[int, int], stop: tuple[int, int]) -> None:
-        super().__init__()
-
-        start_r, start_c = start
-        stop_r, stop_c = stop
-
-        current_r = start_r
-        current_c = start_c
-
-        # Start
-        self._vertices = [(current_r, current_c)]
-
-        # Vertical step
-        if current_r > stop_r:
-            current_r -= 1
-        else:
-            current_r += 1
-        self._vertices.append((current_r, current_c))
-
-        if (start_r, start_c) == (
-            stop_r,
-            stop_c,
-        ):
-            return
-
-        # Horizontal steps
-        if current_c > stop_c:
-            current_c -= current_c - (stop_c + 1)
-        elif current_c < stop_c:
-            current_c += (stop_c - 1) - current_c
-        self._vertices.append((current_r, current_c))
-
-        # Vertical steps
-        current_r -= current_r - stop_r if current_r > stop_r else stop_r - current_r
-        self._vertices.append((current_r, current_c))
-
-        # Horizontal step
-        if current_c > stop_c:  # End -> horizontal
-            current_c -= 1
-        else:
-            current_c += 1
-        self._vertices.append((current_r, current_c))
-
-        # End
-        assert current_r == stop_r and current_c == stop_c

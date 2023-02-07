@@ -2,7 +2,7 @@ import itertools
 from abc import ABC, abstractmethod
 
 import numpy as np
-from helpers import flatten, is_data_qubit, unflatten
+from helpers import is_data_qubit, unflatten
 
 
 # Class that defines the interface of different mappers/mapping strategies for a
@@ -17,57 +17,12 @@ class Mapper(ABC):
         self._cnots: list[tuple[int, int]] = cnots
 
     @abstractmethod
-    def map(self) -> tuple[int, dict[int, int], tuple[int, int]]:
+    def map(self) -> tuple[int, dict[int, tuple[int, int]], tuple[int, int]]:
         pass
 
 
-# Use identity mapping and simply check that the mapping is valid with the given
-# grid dimension
-class Identity(Mapper):
-    def map(self):
-        n_qubits = int(np.prod(self._grid_dims))
-
-        # Compute mapping
-        mapping = {}
-        for cnot in self._cnots:
-            for qubit in cnot:
-                if qubit not in mapping.keys():
-                    # Check that index is not out of bounds
-                    if qubit >= n_qubits:
-                        raise ValueError(
-                            f"The input circuit is not mappable to the given grid dimension {self._grid_dims}."
-                        )
-
-                    # Identity mapping
-                    mapping[qubit] = qubit
-
-        return n_qubits, mapping, self._grid_dims
-
-
-# Rename the indices of the qubits in order to use the smallest indices possible
-class Renaming(Mapper):
-    def map(self):
-        n_max = np.prod(self._grid_dims)
-        mapping = {}
-        n_qubits = 0
-
-        # Compute mapping
-        for cnot in self._cnots:
-            for qubit in cnot:
-                if qubit not in mapping.keys():
-                    mapping[qubit] = n_qubits
-                    n_qubits += 1
-
-                    # Check that index is not out of bounds
-                    if n_qubits > n_max:
-                        raise ValueError(
-                            f"The input circuit is not mappable to the given grid dimension {self._grid_dims}."
-                        )
-
-        return n_qubits, mapping, self._grid_dims
-
-
-def _check_grid_dimensions(grid_dims: tuple[int, int]) -> tuple[tuple[int, int], int]:
+# Helper function to fixes the grid dimensions to be odd
+def _fix_grid_dimensions(grid_dims: tuple[int, int]) -> tuple[tuple[int, int], int]:
     # Make sure that the grid dimensions are odd
     if grid_dims[0] % 2 == 0:
         grid_dims = (grid_dims[0] - 1, grid_dims[1])
@@ -81,12 +36,13 @@ def _check_grid_dimensions(grid_dims: tuple[int, int]) -> tuple[tuple[int, int],
     return grid_dims, n_qubits
 
 
-class PaperIdentity(Mapper):
+# Class that implements the identity mapping strategy
+class Identity(Mapper):
     def map(
         self,
     ):
         # Make sure that the grid dimensions are odd
-        self._grid_dims, n_qubits = _check_grid_dimensions(self._grid_dims)
+        self._grid_dims, n_qubits = _fix_grid_dimensions(self._grid_dims)
 
         n_qubits = int(np.prod(self._grid_dims))
 
@@ -95,26 +51,28 @@ class PaperIdentity(Mapper):
         for cnot in self._cnots:
             for qubit in cnot:
                 if qubit not in mapping.keys():
+                    pos = unflatten(qubit, self._grid_dims)
+
                     # Check that index is not out of bounds and that the qubit is a data qubit
-                    if qubit >= n_qubits or not is_data_qubit(
-                        unflatten(qubit, self._grid_dims)
-                    ):
+                    if qubit >= n_qubits or not is_data_qubit(pos):
                         raise ValueError(
                             f"The input circuit is not mappable to the given grid dimension {self._grid_dims}."
                         )
 
                     # Identity mapping
-                    mapping[qubit] = qubit
+                    mapping[qubit] = pos
 
         return n_qubits, mapping, self._grid_dims
 
 
-class PaperRenaming(Mapper):
+# Class that implements the renaming mapping strategy, which just renames the
+# qubits to use the smallest indices possible
+class Renaming(Mapper):
     def map(
         self,
     ):
         # Make sure that the grid dimensions are odd
-        self._grid_dims, n_qubits = _check_grid_dimensions(self._grid_dims)
+        self._grid_dims, n_qubits = _fix_grid_dimensions(self._grid_dims)
 
         # Compute intermediate mapping
         n_data_max = (self._grid_dims[0] // 2) * (self._grid_dims[1] // 2)
@@ -142,7 +100,7 @@ class PaperRenaming(Mapper):
                 break
 
             assert is_data_qubit((r, c))
-            mapping[data_mapping[current_index]] = flatten(r, c, self._grid_dims)
+            mapping[data_mapping[current_index]] = (r, c)
             current_index += 1
 
         return n_qubits, mapping, self._grid_dims
