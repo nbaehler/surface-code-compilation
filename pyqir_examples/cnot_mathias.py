@@ -1,4 +1,5 @@
-from pyqir import BasicQisBuilder, Constant, IntType, PointerType, SimpleModule, rt
+from pyqir import (BasicQisBuilder, Constant, IntType, PointerType,
+                   SimpleModule, rt)
 
 # TODO rt is introduced in pyqir==0.8.0, but this version remove the Evaluator
 # which I need

@@ -2,6 +2,7 @@ import os
 import tempfile
 
 from compiler import Compiler
+from epoch import phases_vertex_disjoint, print_phases, print_scheduling
 from helpers import append_dump_machine
 from input_circuit import input_circuit
 from mapper import Identity, Renaming
@@ -56,13 +57,8 @@ def main():
     # Schedule the CNOTs according to strategy
     scheduling = scheduling_strategy(grid_dims, mapped_cnots).schedule()
 
-    scheduling_str = ",\n".join(
-        [
-            ",\n".join([f"{i+1}.{j+1}: {path}" for j, path in enumerate(phase)])
-            for i, phase in enumerate(scheduling)
-        ]
-    )
-    print(f"Scheduling: #phase.#path: [vertices]\n{scheduling_str}")
+    # print_scheduling(scheduling)
+    print_phases(scheduling)
 
     # Compile the scheduled CNOTs into QIR
     out_qir = Compiler(grid_dims, scheduling).compile()

@@ -1,4 +1,5 @@
 import numpy as np
+from epoch import Epoch
 from gate import (
     MeasureBB,
     MeasureX,
@@ -13,7 +14,7 @@ from gate import (
     Z,
 )
 from helpers import append_dump_machine, flatten, is_data_qubit
-from path import Path, PathType
+from path import Path
 from pyqir import BasicQisBuilder, SimpleModule
 
 # TODO Find a way to compute xor between measurement results
@@ -23,10 +24,10 @@ class Compiler:
     def __init__(
         self,
         grid_dims: tuple[int, int],
-        scheduling: list[list[Path]],
+        scheduling: list[Epoch],
     ) -> None:
         self._grid_dims: tuple[int, int] = grid_dims
-        self._scheduling: list[list[Path]] = scheduling
+        self._scheduling: list[Epoch] = scheduling
 
     # Compile into qir
     def compile(self) -> str:
@@ -44,13 +45,12 @@ class Compiler:
         # Compile all the epochs in the scheduling
         for epoch in self._scheduling:
             # Compile all the paths in the epoch
-            for path in epoch:
-                if path.get_type() == PathType.LONG_RANGE_CNOT:
-                    self._compile_long_range_cnot(path)
-                elif path.get_type() == PathType.PHASE_1:
-                    self._compile_phase_1(path)
-                else:  # path.get_type() == PathType.PHASE_2:
-                    self._compile_phase_2(path)
+            for path in epoch._paths:
+                self._compile_long_range_cnot(path)
+            for path in epoch._phase_1:
+                self._compile_phase_1(path)
+            for path in epoch._phase_2:
+                self._compile_phase_2(path)
 
         # Reset all the ancilla qubits as their state is not of interest and
         # hence don't need to be output by the simulator

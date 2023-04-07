@@ -1,30 +1,19 @@
 from __future__ import annotations
 
-from enum import Enum
-
 from helpers import compute_equivalent_letter, is_data_qubit
-
-
-# Enum for the different types of paths for compilation
-class PathType(Enum):
-    LONG_RANGE_CNOT = 0
-    PHASE_1 = 1
-    PHASE_2 = 2
 
 
 # Class modelling a path containing all vertices in the operator graph
 class Path:
     def __init__(
         self,
-        type: PathType = None,
-        color_id: int = None,
+        path_id: int = None,
         vertices: list[tuple[int, int]] = None,
     ) -> None:
         super().__init__()
 
+        self._path_id = path_id
         self._vertices = [] if vertices is None else vertices
-        self._type = PathType.LONG_RANGE_CNOT if type is None else type
-        self._color_id = color_id
 
     # Getter
     def __getitem__(self, i: int) -> tuple[int, int]:
@@ -49,7 +38,7 @@ class Path:
 
     # Iterator
     def __iter__(self):
-        return VertexIterator(self)
+        return PathIterator(self)
 
     # Append a vertex to the path
     def append_vertex(self, vertex: tuple[int, int]) -> None:
@@ -65,12 +54,30 @@ class Path:
 
     # Check if the path is edge-disjoint from another path
     def is_edge_disjoint(self, other: Path) -> bool:
+        def unique_edges(
+            vertices: list[tuple[int, int]]
+        ) -> set[tuple[tuple[int, int], tuple[int, int]]]:
+            edges = set()
+
+            for i in range(len(vertices) - 1):
+                if vertices[i][0] < vertices[i + 1][0]:
+                    edges.add((vertices[i], vertices[i + 1]))
+                elif vertices[i][0] > vertices[i + 1][0]:
+                    edges.add((vertices[i + 1], vertices[i]))
+                else:
+                    if vertices[i][1] < vertices[i + 1][1]:
+                        edges.add((vertices[i], vertices[i + 1]))
+                    else:
+                        edges.add((vertices[i + 1], vertices[i]))
+
+            return edges
+
         first = self._vertices
         second = other._vertices
 
-        # Check if any pair of edges are equal
-        e1 = {(first[i], first[i + 1]) for i in range(len(first) - 1)}
-        e2 = {(second[i], second[i + 1]) for i in range(len(second) - 1)}
+        # Check if any pair of edges are equal, direction does not matter
+        e1 = unique_edges(first)
+        e2 = unique_edges(second)
 
         return not e1.intersection(e2)
 
@@ -86,25 +93,21 @@ class Path:
             and first[-1] != second[0]
         )
 
-    # Getter for the type of the path
-    def get_type(self) -> PathType:
-        return self._type
-
     # Returns new path without the current terminals, i.e. the interior of the path
     def interior(self) -> Path:
-        return Path(self._type, self._color_id, self._vertices[1:-1])
+        return Path(self._path_id, self._vertices[1:-1])
 
-    # Getter for the color of the path
-    def get_color_id(self) -> int:
-        return self._color_id
+    # Getter for the ID of the path
+    def get_path_id(self) -> int:
+        return self._path_id
 
-    # Setter for the color of the path
-    def set_color_id(self, color_id: int) -> None:
-        self._color_id = color_id
+    # Setter for the ID of the path
+    def set_path_id(self, path_id: int) -> None:
+        self._path_id = path_id
 
 
 # Iterator over the vertices of a path
-class VertexIterator:
+class PathIterator:
     def __init__(self, path: Path) -> None:
         self._index = 0
         self._path = path
@@ -124,7 +127,11 @@ class VertexIterator:
 # Class for paths that are denoted using only key vertices on that path
 # described in the paper
 class KeyPath(Path):
-    def __init__(self, start: tuple[int, int], stop: tuple[int, int]) -> None:
+    def __init__(
+        self,
+        start: tuple[int, int],
+        stop: tuple[int, int],
+    ) -> None:
         super().__init__()
 
         assert is_data_qubit(start)
@@ -143,7 +150,7 @@ class KeyPath(Path):
 
     # Extend the KeyPath to a normal Path i.e. fill in the missing vertices
     def extend_to_path(self) -> Path:
-        path = Path(self._type, self._color_id)
+        path = Path()
 
         # Add start vertex
         path.append_vertex(self._vertices[0])

@@ -49,28 +49,34 @@ class NeighborsIterator:
 
 # Class representing the starting vertex of path, has to be a data qubit
 class Start(Vertex):
-    def __init__(self, idx: tuple[int, int]) -> None:
+    def __init__(self, idx: tuple[int, int], grid_dims: tuple[int, int]) -> None:
         super().__init__()
 
-        self._idx = idx
-        self.append_neighbor((self._idx[0] - 1, self._idx[1]))
-        self.append_neighbor((self._idx[0] + 1, self._idx[1]))
+        self.append_neighbor((idx[0] - 1, idx[1]))
+
+        if idx[0] + 1 < grid_dims[0]:
+            self.append_neighbor((idx[0] + 1, idx[1]))
 
 
 # Class representing the stopping vertex of path, has to be a data qubit
 class Stop(Vertex):
-    def __init__(self, idx: tuple[int, int]) -> None:
+    def __init__(self, idx: tuple[int, int], grid_dims: tuple[int, int]) -> None:
         super().__init__()
 
-        self._idx = idx
-        self.append_neighbor((self._idx[0], self._idx[1] - 1))
-        self.append_neighbor((self._idx[0], self._idx[1] + 1))
+        self.append_neighbor((idx[0], idx[1] - 1))
+
+        if idx[1] + 1 < grid_dims[1]:
+            self.append_neighbor((idx[0], idx[1] + 1))
 
 
 # Class representing a vertex in the middle of a path, must be an ancilla qubit
 # i.e. no data qubit
 class Ancilla(Vertex):
-    def __init__(self, idx: tuple[int, int], grid_dims: tuple[int, int]) -> None:
+    def __init__(
+        self,
+        idx: tuple[int, int],
+        grid_dims: tuple[int, int],
+    ) -> None:
         super().__init__()
 
         self._idx = idx
@@ -85,11 +91,12 @@ class Ancilla(Vertex):
             if self._idx[0] > 0:
                 self.append_neighbor((self._idx[0] - 1, self._idx[1]))
 
-            if self._idx[0] < self._grid_dims[0] - 1:
+            if self._idx[0] + 1 < self._grid_dims[0]:
                 self.append_neighbor((self._idx[0] + 1, self._idx[1]))
+
         if self._idx[0] % 2 == 0:
             if self._idx[1] > 0:
                 self.append_neighbor((self._idx[0], self._idx[1] - 1))
 
-            if self._idx[1] < self._grid_dims[1] - 1:
+            if self._idx[1] + 1 < self._grid_dims[1]:
                 self.append_neighbor((self._idx[0], self._idx[1] + 1))

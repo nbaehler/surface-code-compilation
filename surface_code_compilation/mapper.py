@@ -21,29 +21,11 @@ class Mapper(ABC):
         pass
 
 
-# Helper function to fixes the grid dimensions to be odd
-def _fix_grid_dimensions(grid_dims: tuple[int, int]) -> tuple[tuple[int, int], int]:
-    # Make sure that the grid dimensions are odd
-    if grid_dims[0] % 2 == 0:
-        grid_dims = (grid_dims[0] - 1, grid_dims[1])
-
-    if grid_dims[1] % 2 == 0:
-        grid_dims = (grid_dims[0], grid_dims[1] - 1)
-
-    # Compute number of qubits
-    n_qubits = int(np.prod(grid_dims))
-
-    return grid_dims, n_qubits
-
-
 # Class that implements the identity mapping strategy
 class Identity(Mapper):
     def map(
         self,
     ):
-        # Make sure that the grid dimensions are odd
-        self._grid_dims, n_qubits = _fix_grid_dimensions(self._grid_dims)
-
         n_qubits = int(np.prod(self._grid_dims))
 
         # Compute mapping
@@ -71,8 +53,7 @@ class Renaming(Mapper):
     def map(
         self,
     ):
-        # Make sure that the grid dimensions are odd
-        self._grid_dims, n_qubits = _fix_grid_dimensions(self._grid_dims)
+        n_qubits = int(np.prod(self._grid_dims))
 
         # Compute intermediate mapping
         n_data_max = (self._grid_dims[0] // 2) * (self._grid_dims[1] // 2)
